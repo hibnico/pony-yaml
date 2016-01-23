@@ -15,7 +15,7 @@ actor Main is TestList
     test(_TestOr)
 
 class iso _TestToken is UnitTest
-  fun name():String => "and"
+  fun name():String => "token"
 
   fun apply(h: TestHelper): TestResult ? =>
     let grammar = Grammar.create(APToken.create(StringToken.create("foo")))

@@ -18,7 +18,11 @@ class val StringToken is Token
     token = token'
 
   fun eq(token': Token): Bool =>
-    false // TODO
+    try
+      token == (token' as StringToken).token
+    else
+      false
+    end
 
   fun toString(): String =>
     "\"" + token + "\""
