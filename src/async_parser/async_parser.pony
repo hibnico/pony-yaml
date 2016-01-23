@@ -44,26 +44,26 @@ type ParseStatus is (ParseSuccess | ParseContinue | ParseFailed)
 
 class ParseResult
   let status: ParseStatus
-  let parser: Maybe[TokenParser]
+  let parser: (TokenParser | None)
   let state: ParserState
   let errorMessage: Stringable
 
   new success(state': ParserState) =>
     status = ParseSuccess
     state = state'
-    parser = Maybe[TokenParser].none()
+    parser = None
     errorMessage = None
 
   new cont(state': ParserState, parser': TokenParser) =>
     status = ParseContinue
-    parser = Maybe[TokenParser](parser')
+    parser = parser'
     state = state'
     errorMessage = None
 
   new failed(state': ParserState, message': String) =>
     status = ParseFailed
     state = state'
-    parser = Maybe[TokenParser].none()
+    parser = None
     errorMessage = message'
 
 interface GrammarElement
