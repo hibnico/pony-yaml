@@ -1,4 +1,6 @@
 
+use "debug"
+
 type TokenId is U16
 
 class val ParserState
@@ -79,7 +81,7 @@ class val APToken is GrammarElement
     tokenId = tokenId'
 
   fun createParser(initialState: ParserState, onResult: OnParseResult): TokenParser =>
-    _SingleTokenParser.create(tokenId, onResult)
+    _SingleTokenParser(tokenId, onResult)
 
 class _SingleTokenParser is TokenParser
   let tokenId: TokenId
@@ -106,7 +108,7 @@ class APOr is GrammarElement
     elements = elements'
 
   fun createParser(state: ParserState, onResult: OnParseResult): TokenParser ? =>
-    elements(0).createParser(state, _OrOnParseResult.create(state, elements, onResult))
+    elements(0).createParser(state, _OrOnParseResult(state, elements, onResult))
 
 class _OrOnParseResult is OnParseResult
   let parentOnResult: OnParseResult
@@ -126,7 +128,7 @@ class _OrOnParseResult is OnParseResult
     currentElement = currentElement + 1
     if currentElement < elements.size() then
       let parser = elements(currentElement).createParser(initialState, this)
-      return parser.acceptToken(initialState)
+      return parser.acceptToken(res.state)
     end
     parentOnResult.onResult(res)
 
@@ -138,7 +140,7 @@ class APAnd is GrammarElement
     elements = elements'
 
   fun createParser(state: ParserState, onResult: OnParseResult): TokenParser ? =>
-    elements(0).createParser(state, _AndOnParseResult.create(elements, onResult))
+    elements(0).createParser(state, _AndOnParseResult(elements, onResult))
 
 class _AndOnParseResult is OnParseResult
   let parentOnResult: OnParseResult

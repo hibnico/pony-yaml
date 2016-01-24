@@ -1,5 +1,6 @@
 
 use "ponytest"
+use "debug"
 use "../src/async_parser"
 
 actor Main is TestList
@@ -15,14 +16,17 @@ actor Main is TestList
     test(_TestAnd)
     test(_TestAndMany)
     test(_TestAndFailure)
+    test(_TestOr)
+    test(_TestOrMany)
+    test(_TestOrFailure)
 
 class iso _TestToken is UnitTest
   fun name():String => "token"
 
   fun apply(h: TestHelper): TestResult ? =>
-    let grammar = Grammar.create(APToken.create(1))
+    let grammar = Grammar(APToken(1))
     let parser = grammar.createParser()
-    let res = parser.acceptToken(ParserState.create(0, 1, "foo"))
+    let res = parser.acceptToken(ParserState(0, 1, "foo"))
     h.assert_true(res.status is ParseSuccess)
     true
 
@@ -30,9 +34,9 @@ class iso _TestTokenFailure is UnitTest
   fun name():String => "token-failure"
 
   fun apply(h: TestHelper): TestResult ? =>
-    let grammar = Grammar.create(APToken.create(1))
+    let grammar = Grammar(APToken(1))
     let parser = grammar.createParser()
-    let res = parser.acceptToken(ParserState.create(0, 2, "foo"))
+    let res = parser.acceptToken(ParserState(0, 2, "foo"))
     h.assert_true(res.status is ParseFailed)
     true
 
@@ -40,10 +44,10 @@ class iso _TestAnd is UnitTest
   fun name():String => "and"
 
   fun apply(h: TestHelper): TestResult ? =>
-    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken.create(1), 1) end
-    let grammar = Grammar.create(APAnd.create(elements))
+    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken(1), 1) end
+    let grammar = Grammar(APAnd(elements))
     let parser = grammar.createParser()
-    let res = parser.acceptToken(ParserState.create(0, 1, "foo"))
+    let res = parser.acceptToken(ParserState(0, 1, "foo"))
     h.assert_true(res.status is ParseSuccess)
     true
 
@@ -53,18 +57,18 @@ class iso _TestAndMany is UnitTest
   fun apply(h: TestHelper): TestResult ? =>
     let elements: Array[GrammarElement] val =
       recover
-        Array[GrammarElement].create()
-          .push(APToken.create(1))
-          .push(APToken.create(2))
-          .push(APToken.create(3))
+        Array[GrammarElement]()
+          .push(APToken(1))
+          .push(APToken(2))
+          .push(APToken(3))
       end
-    let grammar = Grammar.create(APAnd.create(elements))
+    let grammar = Grammar(APAnd(elements))
     let parser = grammar.createParser()
-    var res = parser.acceptToken(ParserState.create(0, 1, "foo"))
+    var res = parser.acceptToken(ParserState(0, 1, "foo"))
     h.assert_true(res.status is ParseContinue, "expecting 1st continue")
-    res = (res.parser as TokenParser).acceptToken(ParserState.create(5, 2, "bar"))
+    res = (res.parser as TokenParser).acceptToken(ParserState(5, 2, "bar"))
     h.assert_true(res.status is ParseContinue, "expecting 2nd continue")
-    res = (res.parser as TokenParser).acceptToken(ParserState.create(18, 3, "end"))
+    res = (res.parser as TokenParser).acceptToken(ParserState(18, 3, "end"))
     h.assert_true(res.status is ParseSuccess, "expecting end")
     true
 
@@ -74,15 +78,69 @@ class iso _TestAndFailure is UnitTest
   fun apply(h: TestHelper): TestResult ? =>
     let elements: Array[GrammarElement] val =
       recover
-        Array[GrammarElement].create()
-          .push(APToken.create(1))
-          .push(APToken.create(2))
-          .push(APToken.create(3))
+        Array[GrammarElement]()
+          .push(APToken(1))
+          .push(APToken(2))
+          .push(APToken(3))
       end
-    let grammar = Grammar.create(APAnd.create(elements))
+    let grammar = Grammar(APAnd(elements))
     let parser = grammar.createParser()
-    var res = parser.acceptToken(ParserState.create(0, 1, "foo"))
+    var res = parser.acceptToken(ParserState(0, 1, "foo"))
     h.assert_true(res.status is ParseContinue, "expecting 1st continue")
-    res = (res.parser as TokenParser).acceptToken(ParserState.create(5, 3, "bar"))
+    res = (res.parser as TokenParser).acceptToken(ParserState(5, 3, "bar"))
     h.assert_true(res.status is ParseFailed, "expecting failure")
+    true
+
+class iso _TestOr is UnitTest
+  fun name():String => "or"
+
+  fun apply(h: TestHelper): TestResult ? =>
+    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken(1), 1) end
+    let grammar = Grammar(APOr(elements))
+    let parser = grammar.createParser()
+    let res = parser.acceptToken(ParserState(0, 1, "foo"))
+    h.assert_true(res.status is ParseSuccess)
+    true
+
+class iso _TestOrMany is UnitTest
+  fun name():String => "or-many"
+
+  fun apply(h: TestHelper): TestResult ? =>
+    let elements: Array[GrammarElement] val =
+      recover
+        Array[GrammarElement]()
+          .push(APToken(1))
+          .push(APToken(2))
+          .push(APToken(3))
+      end
+    let grammar = Grammar(APOr(elements))
+
+    var parser = grammar.createParser()
+    var res = parser.acceptToken(ParserState(0, 1, "foo"))
+    h.assert_true(res.status is ParseSuccess, "expecting 1st success")
+
+    parser = grammar.createParser()
+    res = parser.acceptToken(ParserState(0, 2, "foo"))
+    h.assert_true(res.status is ParseSuccess, "expecting 2nd success")
+
+    parser = grammar.createParser()
+    res = parser.acceptToken(ParserState(0, 3, "foo"))
+    h.assert_true(res.status is ParseSuccess, "expecting 3rd success")
+    true
+
+class iso _TestOrFailure is UnitTest
+  fun name():String => "or-failure"
+
+  fun apply(h: TestHelper): TestResult ? =>
+    let elements: Array[GrammarElement] val =
+      recover
+        Array[GrammarElement]()
+          .push(APToken(1))
+          .push(APToken(2))
+          .push(APToken(3))
+      end
+    let grammar = Grammar(APOr(elements))
+    let parser = grammar.createParser()
+    var res = parser.acceptToken(ParserState(0, 8, "foo"))
+    h.assert_true(res.status is ParseFailed)
     true
