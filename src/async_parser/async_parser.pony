@@ -63,15 +63,20 @@ interface OnParseResult
 class PassOnOnParseResult is OnParseResult
   fun ref onResult(res: ParseResult): ParseResult => res
 
-class val Grammar
-  let root: GrammarElement
 
-  new val create(root': GrammarElement val) =>
-    root = root'
+class GrammarParser
 
-  fun createParser(): TokenParser ? =>
-    root.createParser(ParserState.start(), PassOnOnParseResult.create())
+  var parser: TokenParser
 
+  new create(grammar: GrammarElement val) ? =>
+    parser = grammar.createParser(ParserState.start(), PassOnOnParseResult.create())
+
+  fun ref acceptToken(state: ParserState): ParseStatus ? =>
+    let res = parser.acceptToken(state)
+    if (not ((res.parser) is None)) then
+      parser = res.parser as TokenParser
+    end
+    res.status
 
 
 class val APToken is GrammarElement
