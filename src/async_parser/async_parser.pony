@@ -1,44 +1,21 @@
 
-interface val Token
-  fun eq(token: Token): Bool
-  fun toString(): String
-
-class val StartToken is Token
-  fun eq(token: Token): Bool =>
-    false // TODO
-
-  fun toString(): String =>
-    "START"
-
-
-class val StringToken is Token
-  let token: String
-
-  new val create(token': String) =>
-    token = token'
-
-  fun eq(token': Token): Bool =>
-    try
-      token == (token' as StringToken).token
-    else
-      false
-    end
-
-  fun toString(): String =>
-    "\"" + token + "\""
-
+type TokenId is U16
 
 class val ParserState
-  let token: Token
+  let tokenId: TokenId
+  let value: String
   let position: U8
 
   new val start() =>
     position = 0
-    token = StartToken
+    tokenId = 0
+    value = ""
 
-  new val create(position': U8, token': Token) =>
+  new val create(position': U8, tokenId': TokenId, value': String) =>
     position = position'
-    token = token'
+    tokenId = tokenId'
+    value = value'
+
 
 primitive ParseSuccess
 primitive ParseContinue
@@ -70,7 +47,8 @@ class ParseResult
     parser = None
     errorMessage = message'
 
-interface GrammarElement
+
+interface val GrammarElement
   fun createParser(initialState: ParserState, onResult: OnParseResult): TokenParser ?
 
 interface TokenParser
@@ -83,40 +61,40 @@ interface OnParseResult
 class PassOnOnParseResult is OnParseResult
   fun ref onResult(res: ParseResult): ParseResult => res
 
-class Grammar
-  let element: GrammarElement
+class val Grammar
+  let root: GrammarElement
 
-  new create(element': GrammarElement) =>
-    element = element'
+  new val create(root': GrammarElement val) =>
+    root = root'
 
   fun createParser(): TokenParser ? =>
-    element.createParser(ParserState.start(), PassOnOnParseResult.create())
+    root.createParser(ParserState.start(), PassOnOnParseResult.create())
 
 
 
-class APToken is GrammarElement
-  let expectedToken: Token
+class val APToken is GrammarElement
+  let tokenId: TokenId
 
-  new create(token': Token) =>
-    expectedToken = token'
+  new val create(tokenId': TokenId) =>
+    tokenId = tokenId'
 
   fun createParser(initialState: ParserState, onResult: OnParseResult): TokenParser =>
-    _SingleTokenParser.create(expectedToken, onResult)
+    _SingleTokenParser.create(tokenId, onResult)
 
 class _SingleTokenParser is TokenParser
-  let expectedToken: Token
+  let tokenId: TokenId
   let parentOnResult: OnParseResult
 
-  new create(token': Token, parentOnResult': OnParseResult) =>
-    expectedToken = token'
+  new create(tokenId': TokenId, parentOnResult': OnParseResult) =>
+    tokenId = tokenId'
     parentOnResult = parentOnResult'
 
   fun ref acceptToken(state: ParserState): ParseResult ? =>
-    if state.token == expectedToken then
+    if state.tokenId == tokenId then
       return parentOnResult.onResult(ParseResult.success(state))
     else
-      return parentOnResult.onResult(ParseResult.failed(state, "Expecting token \'" + expectedToken.toString()
-        + "\' but got \'" + state.token.toString() + "\'"))
+      return parentOnResult.onResult(ParseResult.failed(state, "Expecting token \'" + tokenId.string()
+        + "\' but got \'" + state.tokenId.string() + "\'"))
     end
 
 
@@ -124,7 +102,7 @@ class _SingleTokenParser is TokenParser
 class APOr is GrammarElement
   let elements: Array[GrammarElement] val
 
-  new create(elements': Array[GrammarElement] val) =>
+  new val create(elements': Array[GrammarElement] val) =>
     elements = elements'
 
   fun createParser(state: ParserState, onResult: OnParseResult): TokenParser ? =>
@@ -156,7 +134,7 @@ class _OrOnParseResult is OnParseResult
 class APAnd is GrammarElement
   let elements: Array[GrammarElement] val
 
-  new create(elements': Array[GrammarElement] val) =>
+  new val create(elements': Array[GrammarElement] val) =>
     elements = elements'
 
   fun createParser(state: ParserState, onResult: OnParseResult): TokenParser ? =>
