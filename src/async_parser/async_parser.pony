@@ -161,3 +161,28 @@ class _AndOnParseResult is OnParseResult
       return ParseResult.cont(res.state, parser)
     end
     parentOnResult.onResult(ParseResult.success(res.state))
+
+
+class APMany is GrammarElement
+  let element: GrammarElement val
+
+  new val create(element': GrammarElement val) =>
+    element = element'
+
+  fun createParser(state: ParserState, onResult: OnParseResult): TokenParser ? =>
+    element.createParser(state, _ManyOnParseResult(element, onResult))
+
+class _ManyOnParseResult is OnParseResult
+  let parentOnResult: OnParseResult
+  let element: GrammarElement val
+
+  new create(element': GrammarElement val, parentOnResult': OnParseResult) =>
+    element = element'
+    parentOnResult = parentOnResult'
+
+  fun ref onResult(res: ParseResult): ParseResult ? =>
+    if res.status is ParseFailed then
+      return parentOnResult.onResult(ParseResult.success(res.state))
+    end
+    let parser = element.createParser(res.state, this)
+    ParseResult.cont(res.state, parser)
