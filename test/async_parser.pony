@@ -11,8 +11,10 @@ actor Main is TestList
 
   fun tag tests(test: PonyTest) =>
     test(_TestToken)
+    test(_TestTokenFailure)
     test(_TestAnd)
-    test(_TestAnd2)
+    test(_TestAndMany)
+    test(_TestAndFailure)
 
 class iso _TestToken is UnitTest
   fun name():String => "token"
@@ -22,6 +24,16 @@ class iso _TestToken is UnitTest
     let parser = grammar.createParser()
     let res = parser.acceptToken(ParserState.create(0, 1, "foo"))
     h.assert_true(res.status is ParseSuccess)
+    true
+
+class iso _TestTokenFailure is UnitTest
+  fun name():String => "token-failure"
+
+  fun apply(h: TestHelper): TestResult ? =>
+    let grammar = Grammar.create(APToken.create(1))
+    let parser = grammar.createParser()
+    let res = parser.acceptToken(ParserState.create(0, 2, "foo"))
+    h.assert_true(res.status is ParseFailed)
     true
 
 class iso _TestAnd is UnitTest
@@ -35,8 +47,8 @@ class iso _TestAnd is UnitTest
     h.assert_true(res.status is ParseSuccess)
     true
 
-class iso _TestAnd2 is UnitTest
-  fun name():String => "and2"
+class iso _TestAndMany is UnitTest
+  fun name():String => "and-many"
 
   fun apply(h: TestHelper): TestResult ? =>
     let elements: Array[GrammarElement] val =
@@ -54,4 +66,23 @@ class iso _TestAnd2 is UnitTest
     h.assert_true(res.status is ParseContinue, "expecting 2nd continue")
     res = (res.parser as TokenParser).acceptToken(ParserState.create(18, 3, "end"))
     h.assert_true(res.status is ParseSuccess, "expecting end")
+    true
+
+class iso _TestAndFailure is UnitTest
+  fun name():String => "and-failure"
+
+  fun apply(h: TestHelper): TestResult ? =>
+    let elements: Array[GrammarElement] val =
+      recover
+        Array[GrammarElement].create()
+          .push(APToken.create(1))
+          .push(APToken.create(2))
+          .push(APToken.create(3))
+      end
+    let grammar = Grammar.create(APAnd.create(elements))
+    let parser = grammar.createParser()
+    var res = parser.acceptToken(ParserState.create(0, 1, "foo"))
+    h.assert_true(res.status is ParseContinue, "expecting 1st continue")
+    res = (res.parser as TokenParser).acceptToken(ParserState.create(5, 3, "bar"))
+    h.assert_true(res.status is ParseFailed, "expecting failure")
     true
