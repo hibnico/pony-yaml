@@ -1,7 +1,7 @@
 
 use "ponytest"
 use "debug"
-use "../src/async_parser"
+use "async_parser"
 
 actor Main is TestList
   new create(env: Env) =>

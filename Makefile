@@ -6,5 +6,5 @@ clean:
 	rm -rf build
 
 test:
-	ponyc --debug -o build test
-	./build/test
+	ponyc -p src --debug -o build src/async_parser_test
+	./build/async_parser_test
