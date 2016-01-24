@@ -20,6 +20,7 @@ actor Main is TestList
     test(_TestOrMany)
     test(_TestOrFailure)
     test(_TestMany)
+    test(_TestAtLeastOne)
 
 class iso _TestToken is UnitTest
   fun name():String => "token"
@@ -165,4 +166,25 @@ class iso _TestMany is UnitTest
     parser = grammar.createParser()
     res = parser.acceptToken(ParserState(0, 2, "bar"))
     h.assert_true(res.status is ParseSuccess, "expecting starting end success")
+    true
+
+
+class iso _TestAtLeastOne is UnitTest
+  fun name():String => "at-least-one"
+
+  fun apply(h: TestHelper): TestResult ? =>
+    let grammar = Grammar(APAtLeastOne(APToken(1)))
+    var parser = grammar.createParser()
+    var res = parser.acceptToken(ParserState(0, 1, "foo"))
+    h.assert_true(res.status is ParseContinue, "expecting 1st continue")
+    res = (res.parser as TokenParser).acceptToken(ParserState(0, 1, "foo"))
+    h.assert_true(res.status is ParseContinue, "expecting 2nd continue")
+    res = (res.parser as TokenParser).acceptToken(ParserState(0, 1, "foo"))
+    h.assert_true(res.status is ParseContinue, "expecting 3rd continue")
+    res = (res.parser as TokenParser).acceptToken(ParserState(0, 2, "bar"))
+    h.assert_true(res.status is ParseSuccess, "expecting end success")
+
+    parser = grammar.createParser()
+    res = parser.acceptToken(ParserState(0, 2, "bar"))
+    h.assert_true(res.status is ParseFailed, "expecting starting end failure")
     true
