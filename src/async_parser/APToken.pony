@@ -1,25 +1,25 @@
 
 class val APToken is GrammarElement
-  let tokenId: TokenId
+  let tokenType: TokenType
 
-  new val create(tokenId': TokenId) =>
-    tokenId = tokenId'
+  new val create(tokenType': TokenType) =>
+    tokenType = tokenType'
 
   fun createParser(initialState: ParserState, onResult: OnParseResult): TokenParser =>
-    _SingleTokenParser(tokenId, onResult)
+    _SingleTokenParser(tokenType, onResult)
 
 class _SingleTokenParser is TokenParser
-  let tokenId: TokenId
+  let tokenType: TokenType
   let parentOnResult: OnParseResult
 
-  new create(tokenId': TokenId, parentOnResult': OnParseResult) =>
-    tokenId = tokenId'
+  new create(tokenType': TokenType, parentOnResult': OnParseResult) =>
+    tokenType = tokenType'
     parentOnResult = parentOnResult'
 
   fun ref acceptToken(state: ParserState): ParseResult ? =>
-    if state.tokenId == tokenId then
+    if state.token.getType() == tokenType then
       return parentOnResult.onResult(ParseResult.success(state))
     else
-      return parentOnResult.onResult(ParseResult.failed(state, "Expecting token \'" + tokenId.string()
-        + "\' but got \'" + state.tokenId.string() + "\'"))
+      return parentOnResult.onResult(ParseResult.failed(state, "Expecting token type \'" + tokenType.string()
+        + "\' but got \'" + state.token.string() + "\'"))
     end

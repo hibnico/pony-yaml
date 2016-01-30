@@ -1,22 +1,25 @@
 
 use "debug"
 
-type TokenId is U16
+interface val TokenType is (Equatable[TokenType] & Stringable)
+  fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ => "tokentype".string(fmt)
+
+interface val Token is Stringable
+  fun getType(): TokenType
+  fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ => getType().string(fmt)
+
+primitive _NoTokenType is TokenType
+primitive _NoToken is Token
+  fun getType(): TokenType => _NoTokenType
 
 class val ParserState
-  let tokenId: TokenId
-  let value: String
-  let position: U8
+  let token: Token
 
   new val start() =>
-    position = 0
-    tokenId = 0
-    value = ""
+    token = _NoToken
 
-  new val create(position': U8, tokenId': TokenId, value': String) =>
-    position = position'
-    tokenId = tokenId'
-    value = value'
+  new val create(token': Token) =>
+    token = token'
 
 
 primitive ParseSuccess

@@ -6,10 +6,10 @@ class iso _TestAnd is UnitTest
   fun name():String => "and"
 
   fun apply(h: TestHelper): TestResult ? =>
-    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken(1), 1) end
+    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken(TestTokenType1), 1) end
     let grammar = APAnd(elements)
     let parser = GrammarParser(grammar)
-    let status = parser.acceptToken(ParserState(0, 1, "foo"))
+    let status = parser.acceptToken(ParserState(TestToken(TestTokenType1)))
     h.assert_true(status is ParseSuccess)
     true
 
@@ -20,17 +20,17 @@ class iso _TestAndMany is UnitTest
     let elements: Array[GrammarElement] val =
       recover
         Array[GrammarElement]()
-          .push(APToken(1))
-          .push(APToken(2))
-          .push(APToken(3))
+          .push(APToken(TestTokenType1))
+          .push(APToken(TestTokenType2))
+          .push(APToken(TestTokenType3))
       end
     let grammar = APAnd(elements)
     let parser = GrammarParser(grammar)
-    var status = parser.acceptToken(ParserState(0, 1, "foo"))
+    var status = parser.acceptToken(ParserState(TestToken(TestTokenType1)))
     h.assert_true(status is ParseContinue, "expecting 1st continue")
-    status = parser.acceptToken(ParserState(5, 2, "bar"))
+    status = parser.acceptToken(ParserState(TestToken(TestTokenType2)))
     h.assert_true(status is ParseContinue, "expecting 2nd continue")
-    status = parser.acceptToken(ParserState(18, 3, "end"))
+    status = parser.acceptToken(ParserState(TestToken(TestTokenType3)))
     h.assert_true(status is ParseSuccess, "expecting end")
     true
 
@@ -41,14 +41,14 @@ class iso _TestAndFailure is UnitTest
     let elements: Array[GrammarElement] val =
       recover
         Array[GrammarElement]()
-          .push(APToken(1))
-          .push(APToken(2))
-          .push(APToken(3))
+          .push(APToken(TestTokenType1))
+          .push(APToken(TestTokenType2))
+          .push(APToken(TestTokenType3))
       end
     let grammar = APAnd(elements)
     let parser = GrammarParser(grammar)
-    var status = parser.acceptToken(ParserState(0, 1, "foo"))
+    var status = parser.acceptToken(ParserState(TestToken(TestTokenType1)))
     h.assert_true(status is ParseContinue, "expecting 1st continue")
-    status = parser.acceptToken(ParserState(5, 3, "bar"))
+    status = parser.acceptToken(ParserState(TestToken(TestTokenType3)))
     h.assert_true(status is ParseFailed, "expecting failure")
     true

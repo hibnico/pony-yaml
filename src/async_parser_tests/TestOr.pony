@@ -6,10 +6,10 @@ class iso _TestOr is UnitTest
   fun name():String => "or"
 
   fun apply(h: TestHelper): TestResult ? =>
-    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken(1), 1) end
+    let elements: Array[GrammarElement] val = recover Array[GrammarElement].init(APToken(TestTokenType1), 1) end
     let grammar = APOr(elements)
     let parser = GrammarParser(grammar)
-    let status = parser.acceptToken(ParserState(0, 1, "foo"))
+    let status = parser.acceptToken(ParserState(TestToken(TestTokenType1)))
     h.assert_true(status is ParseSuccess)
     true
 
@@ -20,22 +20,22 @@ class iso _TestOrMany is UnitTest
     let elements: Array[GrammarElement] val =
       recover
         Array[GrammarElement]()
-          .push(APToken(1))
-          .push(APToken(2))
-          .push(APToken(3))
+          .push(APToken(TestTokenType1))
+          .push(APToken(TestTokenType2))
+          .push(APToken(TestTokenType3))
       end
     let grammar = APOr(elements)
 
     var parser = GrammarParser(grammar)
-    var status = parser.acceptToken(ParserState(0, 1, "foo"))
+    var status = parser.acceptToken(ParserState(TestToken(TestTokenType1)))
     h.assert_true(status is ParseSuccess, "expecting 1st success")
 
     parser = GrammarParser(grammar)
-    status = parser.acceptToken(ParserState(0, 2, "foo"))
+    status = parser.acceptToken(ParserState(TestToken(TestTokenType2)))
     h.assert_true(status is ParseSuccess, "expecting 2nd success")
 
     parser = GrammarParser(grammar)
-    status = parser.acceptToken(ParserState(0, 3, "foo"))
+    status = parser.acceptToken(ParserState(TestToken(TestTokenType3)))
     h.assert_true(status is ParseSuccess, "expecting 3rd success")
     true
 
@@ -46,12 +46,12 @@ class iso _TestOrFailure is UnitTest
     let elements: Array[GrammarElement] val =
       recover
         Array[GrammarElement]()
-          .push(APToken(1))
-          .push(APToken(2))
-          .push(APToken(3))
+          .push(APToken(TestTokenType1))
+          .push(APToken(TestTokenType2))
+          .push(APToken(TestTokenType3))
       end
     let grammar = APOr(elements)
     let parser = GrammarParser(grammar)
-    var status = parser.acceptToken(ParserState(0, 8, "foo"))
+    var status = parser.acceptToken(ParserState(TestToken(TestTokenType4)))
     h.assert_true(status is ParseFailed)
     true

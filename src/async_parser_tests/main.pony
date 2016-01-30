@@ -20,3 +20,18 @@ actor Main is TestList
     test(_TestOrFailure)
     test(_TestMany)
     test(_TestAtLeastOne)
+
+primitive TestTokenType1 is TokenType
+primitive TestTokenType2 is TokenType
+primitive TestTokenType3 is TokenType
+primitive TestTokenType4 is TokenType
+primitive TestTokenType5 is TokenType
+primitive TestTokenType6 is TokenType
+
+class TestToken is Token
+  let tokenType: TokenType
+
+  new val create(tokenType': TokenType) =>
+    tokenType = tokenType'
+
+  fun getType(): TokenType => tokenType
