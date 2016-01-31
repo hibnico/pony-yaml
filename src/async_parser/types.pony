@@ -8,15 +8,15 @@ interface val Token is Stringable
   fun getType(): TokenType
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ => getType().string(fmt)
 
-primitive _NoTokenType is TokenType
-primitive _NoToken is Token
-  fun getType(): TokenType => _NoTokenType
+primitive NoTokenType is TokenType
+primitive NoToken is Token
+  fun getType(): TokenType => NoTokenType
 
 class val ParserState
   let token: Token
 
   new val start() =>
-    token = _NoToken
+    token = NoToken
 
   new val create(token': Token) =>
     token = token'
