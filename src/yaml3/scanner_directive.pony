@@ -8,7 +8,7 @@
  *      %TAG    !yaml!  tag:yaml.org,2002:n
  *      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  */
-class _DirectiveScanner
+class _DirectiveScanner is _Scanner
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   var _nameScanner: (None | _DirectiveNameScanner) = None
@@ -19,12 +19,12 @@ class _DirectiveScanner
     _startMark = mark
     _nextScanner = nextScanner
 
-  fun scan(state: _ScannerState): _ScanResult ? =>
+  fun ref apply(state: _ScannerState): _ScanResult ? =>
     /* Eat '%'. */
     state.skip()
     let s = _DirectiveNameScanner.create(_startMark, this~_scanValue())
     _nameScanner = s
-    s
+    s.apply(state)
 
   fun _scanValue(state: _ScannerState): _ScanResult ? =>
     let nameScanner = _nameScanner as _DirectiveNameScanner
@@ -32,12 +32,12 @@ class _DirectiveScanner
     if nameScanner.name == "YAML" then
       let s = _VersionDirectiveValueScanner(_startMark, this~_scanVersion())
       _versionScanner = s
-      s
+      s.apply(state)
     /* Is it a TAG directive? */
     elseif nameScanner.name == "TAG" then
       let s = _TagDirectiveValueScanner(_startMark, this~_scanTagValue())
       _tagScanner = s
-      s
+      s.apply(state)
     /* Unknown directive. */
     else
       ScanError("while scanning a directive", _startMark, "found unknown directive name")
@@ -46,12 +46,14 @@ class _DirectiveScanner
   fun _scanVersion(state: _ScannerState): _ScanResult ? =>
     let versionScanner = _versionScanner as _VersionDirectiveValueScanner
     state.emitToken(_YamlVersionDirectiveToken(_startMark, state.mark.clone(), _YamlVersionDirectiveTokenData(versionScanner.major, versionScanner.minor)))
-    _LineTrailScanner.create(_startMark, "while scanning a directive", _nextScanner)
+    let s = _LineTrailScanner.create(_startMark, "while scanning a directive", _nextScanner)
+    s.apply(state)
 
   fun _scanTagValue(state: _ScannerState): _ScanResult ? =>
     let tagScanner = _tagScanner as _TagDirectiveValueScanner
     state.emitToken(_YamlTagDirectiveToken(_startMark, state.mark.clone(), _YamlTagDirectiveTokenData.create(tagScanner.handle, tagScanner.prefix)))
-    _LineTrailScanner.create(_startMark, "while scanning a directive", _nextScanner)
+    let s = _LineTrailScanner.create(_startMark, "while scanning a directive", _nextScanner)
+    s.apply(state)
 
 /*
  * Scan the directive name.
@@ -62,7 +64,7 @@ class _DirectiveScanner
  *      %TAG    !yaml!  tag:yaml.org,2002:n
  *       ^^^
  */
-class _DirectiveNameScanner
+class _DirectiveNameScanner is _Scanner
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   let name: String = String()
@@ -71,9 +73,9 @@ class _DirectiveNameScanner
     _startMark = mark
     _nextScanner = nextScanner
 
-  fun scan(state: _ScannerState): _ScanResult ? =>
+  fun apply(state: _ScannerState): _ScanResult ? =>
     if state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this)
     end
 
     while state.buffer.isAlpha() do
@@ -81,7 +83,7 @@ class _DirectiveNameScanner
       | let e: ScanError => return e
       end
       if not state.buffer.available() then
-        return ScanPaused
+        return ScanPaused(this)
       end
     end
 
@@ -94,7 +96,7 @@ class _DirectiveNameScanner
     if not state.buffer.isBlankZ() then
       return ScanError("while scanning a directive", _startMark, "found unexpected non-alphabetical character")
     end
-    _nextScanner
+    _nextScanner.apply(state)
 
 /*
  * Scan a YAML-DIRECTIVE or TAG-DIRECTIVE token.
@@ -105,7 +107,7 @@ class _DirectiveNameScanner
  *      %TAG    !yaml!  tag:yaml.org,2002:n
  *      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  */
-class _TagDirectiveValueScanner
+class _TagDirectiveValueScanner is _Scanner
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   var _tagHandleScanner: (None | _TagHandleScanner) = None
@@ -117,27 +119,27 @@ class _TagDirectiveValueScanner
     _startMark = mark
     _nextScanner = nextScanner
 
-  fun scan(state: _ScannerState): _ScanResult ? =>
+  fun apply(state: _ScannerState): _ScanResult ? =>
     let s = _TagHandleScanner(true, _startMark, this~_scanWhitespace())
     _tagHandleScanner = s
-    s
+    s.apply(state)
 
   fun _scanWhitespace(state: _ScannerState): _ScanResult ? =>
     /* Expect a whitespace. */
     if not state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this~_scanWhitespace())
     end
     if not state.buffer.isBlank() then
       return ScanError("while scanning a %TAG directive", _startMark, "did not find expected whitespace")
     end
     let s = _TagURIScanner(true, None, _startMark, this~_scanWhitespaceOrLineBreak())
     _tagURIScanner = s
-    s
+    s.apply(state)
 
   fun _scanWhitespaceOrLineBreak(state: _ScannerState): _ScanResult ? =>
     /* Expect a whitespace or line break. */
     if not state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this~_scanWhitespaceOrLineBreak())
     end
     if not state.buffer.isBlankZ() then
       return ScanError("while scanning a %TAG directive", _startMark, "did not find expected whitespace or line break")
@@ -146,7 +148,7 @@ class _TagDirectiveValueScanner
     handle = tagHandleScanner.handle
     let tagURIScanner = _tagURIScanner as _TagURIScanner
     prefix = tagURIScanner.uri
-    _nextScanner
+    _nextScanner.apply(state)
 
 
 /*
@@ -158,7 +160,7 @@ class _TagDirectiveValueScanner
  *      %YAML   1.1     # a commentn
  *                ^
  */
-class _VersionDirectiveNumberScanner
+class _VersionDirectiveNumberScanner is _Scanner
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   var value: U16 = 0
@@ -168,10 +170,10 @@ class _VersionDirectiveNumberScanner
     _startMark = mark
     _nextScanner = nextScanner
 
-  fun scan(state: _ScannerState): _ScanResult ? =>
+  fun ref apply(state: _ScannerState): _ScanResult ? =>
     /* Repeat while the next character is digit. */
     if not state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this)
     end
     while state.buffer.isDigit() do
       /* Check if the number is too long. */
@@ -182,14 +184,14 @@ class _VersionDirectiveNumberScanner
       value = (value * 10) + buffer.asDigit()
       state.skip()
       if not state.buffer.available() then
-        return ScanPaused
+        return ScanPaused(this)
       end
     end
     /* Check if the number was present. */
     if length == 0 then
       return ScanError("while scanning a %YAML directive", _startMark, "did not find expected version number")
     end
-    _nextScanner
+    _nextScanner.apply(state)
 
 /*
  * Scan the value of VERSION-DIRECTIVE.
@@ -198,7 +200,7 @@ class _VersionDirectiveNumberScanner
  *      %YAML   1.1     # a commentn
  *           ^^^^^^
  */
-class _VersionDirectiveValueScanner
+class _VersionDirectiveValueScanner is _Scanner
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   var _versionScanner: (None | _VersionDirectiveNumberScanner) = None
@@ -209,10 +211,10 @@ class _VersionDirectiveValueScanner
     _startMark = mark
     _nextScanner = nextScanner
 
-  fun scan(state: _ScannerState): _ScanResult ? =>
-    let s = _VersionDirectiveNumberScanner.create(_startMark, _WhitespaceScanner~scan(this~_scanDot()))
+  fun ref apply(state: _ScannerState): _ScanResult ? =>
+    let s = _VersionDirectiveNumberScanner.create(_startMark, _WhitespaceScanner~apply(this~_scanDot()))
     _versionScanner = s
-    s
+    s.apply(state)
 
   fun _scanDot(state: _ScannerState): _ScanResult ? =>
     let versionScanner = _versionScanner as _VersionDirectiveNumberScanner
@@ -224,24 +226,24 @@ class _VersionDirectiveValueScanner
     state.skip()
     let s = _VersionDirectiveNumberScanner.create(_startMark, this~_scanEnd())
     _versionScanner = s
-    s
+    s.apply(state)
 
   fun _scanEnd(state: _ScannerState): _ScanResult ? =>
     let versionScanner = _versionScanner as _VersionDirectiveNumberScanner
     minor = versionScanner.value
-    _nextScanner
+    _nextScanner.apply(state)
 
 
-primitive _WhitespaceScanner
-  fun scan(nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
+primitive _WhitespaceScanner is _Scanner
+  fun ref apply(nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
     /* Eat whitespaces. */
     if not state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this)
     end
     while state.buffer.isBlank() do
       state.skip()
       if not state.buffer.available() then
-        return ScanPaused
+        return ScanPaused(this)
       end
     end
-    nextScanner
+    nextScanner.apply(state)

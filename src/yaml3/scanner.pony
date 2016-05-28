@@ -1,12 +1,12 @@
 
 
-class _RootScanner
-  fun ref scan(state: _ScannerState): _ScanResult ? =>
+class _RootScanner is _Scanner
+  fun ref apply(state: _ScannerState): _ScanResult ? =>
     if not state.available() then
-      return ScanPaused
+      return ScanPaused(this)
     end
     _streamStart()
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   fun ref _streamStart() =>
     let simpleKey = _YamlSimpleKey.create()
@@ -26,12 +26,12 @@ class _RootScanner
   fun ref _scanToNextToken(state: _ScannerState): _ScanResult ? =>
     /* Allow the BOM mark to start a line. */
     if not state.available() then
-      return ScanPaused
+      return ScanPaused(this~_scanToNextToken())
     end
     if (state.mark.column == 0) and (state.isBom()) then
       state.skip()
     end
-    this~_scanToNextToken_skipWhitespaces()
+    this._scanToNextToken_skipWhitespaces(state)
 
   /*
    * Eat whitespaces.
@@ -48,43 +48,43 @@ class _RootScanner
              state.check('\t'))) do
       state.skip()
       if not state.available() then
-        return ScanPaused
+        return ScanPaused(this~_scanToNextToken_skipWhitespaces())
       end
     end
 
     if state.check('#') then
-      this~_scanToNextToken_skipComment()
+      this._scanToNextToken_skipComment(state)
     else
-      this~_scanToNextToken_checkLineBreak()
+      this._scanToNextToken_checkLineBreak(state)
     end
 
   fun ref _scanToNextToken_skipComment(state: _ScannerState): _ScanResult ? =>
     while not state.isBreakZ() do
       state.skip()
       if not state.available() then
-        return ScanPaused
+        return ScanPaused(this~_scanToNextToken_skipComment())
       end
     end
-    this~_scanToNextToken_checkLineBreak()
+    this._scanToNextToken_checkLineBreak(state)
 
   fun ref _scanToNextToken_checkLineBreak(state: _ScannerState): _ScanResult ? =>
     /* If it is a line break, eat it. */
     if state.isBreak() then
-      this~_scanToNextToken_skipLineBreak()
+      this._scanToNextToken_skipLineBreak(state)
     else
-      this~_scanStaleSimpleKeys()
+      this._scanStaleSimpleKeys(state)
     end
 
   fun ref _scanToNextToken_skipLineBreak(state: _ScannerState): _ScanResult ? =>
     if not state.available(2) then
-      return ScanPaused
+      return ScanPaused(this~_scanToNextToken_skipLineBreak())
     end
     state.skipLine()
     /* In the block context, a new line may start a simple key. */
     if state.flowLevel == 0 then
       state.simpleKeyAllowed = true
     end
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Check the list of potential simple keys and remove the positions that
@@ -111,7 +111,7 @@ class _RootScanner
     end
     /* Check the indentation level against the current column. */
     _unrollIndent(state, state.mark.column)
-    this~_scanToken()
+    this._scanToken(state)
 
   fun ref _scanToken(state: _ScannerState): _ScanResult ? =>
     /*
@@ -119,17 +119,17 @@ class _RootScanner
      * of the longest indicators ('--- ' and '... ').
     */
     if not state.available(4) then
-      return ScanPaused
+      return ScanPaused(this~_scanToken())
     end
 
     /* Is it the end of the stream? */
     if state.isZ() then
-      return this~_scanStreamEnd()
+      return this._scanStreamEnd(state)
     end
 
     /* Is it a directive? */
     if (state.mark.column == 0) and state.check('%') then
-      return this~_scanDirective()
+      return this._scanDirective(state)
     end
 
     /* Is it the document start indicator? */
@@ -138,7 +138,7 @@ class _RootScanner
             and state.check('-', 1)
             and state.check('-', 2)
             and state.isBlankZ(3) then
-      return this~_scanDocumentIndicator(YAML_DOCUMENT_START_TOKEN)
+      return this._scanDocumentIndicator(YAML_DOCUMENT_START_TOKEN, state)
     end
 
     /* Is it the document end indicator? */
@@ -147,82 +147,82 @@ class _RootScanner
             and state.check('.', 1)
             and state.check('.', 2)
             and state.isBlankZ(3) then
-      return this~_scanDocumentIndicator(YAML_DOCUMENT_END_TOKEN)
+      return this._scanDocumentIndicator(YAML_DOCUMENT_END_TOKEN, state)
     end
 
     /* Is it the flow sequence start indicator? */
     if state.check('[') then
-      return this~_scanFlowCollectionStart(YAML_FLOW_SEQUENCE_START_TOKEN)
+      return this._scanFlowCollectionStart(YAML_FLOW_SEQUENCE_START_TOKEN, state)
     end
 
     /* Is it the flow mapping start indicator? */
     if state.check('{') then
-      return this~_scanFlowCollectionStart(YAML_FLOW_MAPPING_START_TOKEN)
+      return this._scanFlowCollectionStart(YAML_FLOW_MAPPING_START_TOKEN, state)
     end
 
     /* Is it the flow sequence end indicator? */
     if state.check(']') then
-      return this~_scanFlowCollectionEnd(YAML_FLOW_SEQUENCE_END_TOKEN)
+      return this._scanFlowCollectionEnd(YAML_FLOW_SEQUENCE_END_TOKEN, state)
     end
 
     /* Is it the flow mapping end indicator? */
     if state.check('}') then
-      return this~_scanFlowCollectionEnd(YAML_FLOW_MAPPING_END_TOKEN)
+      return this._scanFlowCollectionEnd(YAML_FLOW_MAPPING_END_TOKEN, state)
     end
 
     /* Is it the flow entry indicator? */
     if state.check(',') then
-      return this~_scanFlowEntry()
+      return this._scanFlowEntry(state)
     end
 
     /* Is it the block entry indicator? */
     if state.check('-') and state.isBlankZ(1) then
-      return this~_scanBlockEntry()
+      return this._scanBlockEntry(state)
     end
 
     /* Is it the key indicator? */
     if state.check('?') and ((state.flowLevel > 0) or state.isBlankZ(1)) then
-      return this~_scanKey()
+      return this._scanKey(state)
     end
 
     /* Is it the value indicator? */
     if state.check(':') and ((state.flowLevel > 0) or state.isBlankZ(1)) then
-      return this~_scanValue()
+      return this._scanValue(state)
     end
 
     /* Is it an alias? */
     if state.check('*') then
-      return this~_scanAnchor(_YamlAliasToken~create(), "alias")
+      return this._scanAnchor(_YamlAliasToken~create(), "alias", state)
     end
 
     /* Is it an anchor? */
     if state.check('&') then
-      return this~_scanAnchor(_YamlAnchorToken~create(), "anchor")
+      return this._scanAnchor(_YamlAnchorToken~create(), "anchor", state)
     end
 
     /* Is it a tag? */
     if state.check('!') then
-      return this~_scanTag()
+      return this._scanTag(state)
     end
 
     /* Is it a literal scalar? */
     if state.check('|') and not (state.flowLevel > 0) then
-      return this~_scanBlockScalar(1)
+      return this._scanBlockScalar(true, state)
     end
 
     /* Is it a folded scalar? */
     if state.check('>') and not (state.flowLevel > 0) then
-      return this~_scanBlockScalar(0)
+      return this._scanBlockScalar(false, state)
     end
 
     /* Is it a single-quoted scalar? */
     if state.check('\'') then
-      return this~_scanFlowScalar(1)
+      return this._scanFlowScalar(true, state)
     end
 
     /* Is it a double-quoted scalar? */
     if state.check('"') then
-      return this~_scanFlowScalar(0)
+      return this._scanFlowScalar(false, state)
     end
 
     /*
@@ -257,7 +257,7 @@ class _RootScanner
             (not (state.flowLevel > 0) and
              (state.check('?') or state.check(':'))
              and not state.isBlankZ(1)) then
-      return this~_scanPlainScalar()
+      return this._scanPlainScalar(state)
     end
 
     /*
@@ -298,7 +298,8 @@ class _RootScanner
     | let e: ScanError => return e
     end
     state.simpleKeyAllowed = false
-    _DirectiveScanner.create(state.mark.clone(), this~_scanToNextToken())
+    let s = _DirectiveScanner.create(state.mark.clone(), this~_scanToNextToken())
+    s.apply(state)
 
 
   /*
@@ -318,7 +319,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the DOCUMENT-START or DOCUMENT-END token. */
     state.emitToken(tokenConstructor(startMark, endMark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the FLOW-SEQUENCE-START or FLOW-MAPPING-START token.
@@ -338,7 +339,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the FLOW-SEQUENCE-START of FLOW-MAPPING-START token. */
     state.emitToken(tokenConstructor(startMark, endMark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the FLOW-SEQUENCE-END or FLOW-MAPPING-END token.
@@ -358,7 +359,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the FLOW-SEQUENCE-END of FLOW-MAPPING-END token. */
     state.emitToken(tokenConstructor(startMark, endmark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the FLOW-ENTRY token.
@@ -376,7 +377,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the FLOW-ENTRY token and append it to the queue. */
     state.emitToken(_YamlFlowEntryToken(startMark, endMark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the BLOCK-ENTRY token.
@@ -410,7 +411,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the BLOCK-ENTRY token and append it to the queue. */
     state.emitToken(_YamlBlockEntryToken(startMark, endMark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the KEY token.
@@ -437,7 +438,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the KEY token and append it to the queue. */
     state.emitToken(_YAMLToken(YAML_KEY_TOKEN, startMark, endMark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the VALUE token.
@@ -474,7 +475,7 @@ class _RootScanner
     let endMark = state.mark.clone()
     /* Create the VALUE token and append it to the queue. */
     state.emitToken(_YAMLToken(YAML_VALUE_TOKEN, startMark, endMark))
-    this~_scanToNextToken()
+    this._scanToNextToken(state)
 
   /*
    * Produce the ALIAS or ANCHOR token.
@@ -488,7 +489,8 @@ class _RootScanner
     /* A simple key cannot follow an anchor or an alias. */
     state.simpleKeyAllowed = false
     /* Create the ALIAS or ANCHOR token and append it to the queue. */
-    _AnchorScanner.create(tokenConstructor, errorName, this~_scanToNextToken())
+    let s = _AnchorScanner.create(tokenConstructor, errorName, this~_scanToNextToken())
+    s.apply(state)
 
   /*
    * Produce the TAG token.
@@ -501,7 +503,8 @@ class _RootScanner
     /* A simple key cannot follow a tag. */
     state.simpleKeyAllowed = false
     /* Create the TAG token and append it to the queue. */
-    _TagScanner.create(this~_scanToNextToken())
+    let s = _TagScanner.create(this~_scanToNextToken())
+    s.apply(state)
 
   /*
    * Produce the SCALAR(...,literal) or SCALAR(...,folded) tokens.
@@ -514,7 +517,8 @@ class _RootScanner
     /* A simple key may follow a block scalar. */
     state.simpleKeyAllowed = true
     /* Create the SCALAR token and append it to the queue. */
-    _BlockScalarScanner.create(literal, this~_scanToNextToken())
+    let s = _BlockScalarScanner.create(literal, this~_scanToNextToken())
+    s.apply(state)
 
 
   /*
@@ -528,7 +532,8 @@ class _RootScanner
     /* A simple key cannot follow a flow scalar. */
     state.simpleKeyAllowed = false
     /* Create the SCALAR token and append it to the queue. */
-    _FlowScalarScanner.create(single, this~_scanToNextToken())
+    let s = _FlowScalarScanner.create(single, this~_scanToNextToken())
+    s.apply(state)
 
   /*
    * Produce the SCALAR(...,plain) token.
@@ -541,7 +546,8 @@ class _RootScanner
     /* A simple key cannot follow a flow scalar. */
     state.simpleKeyAllowed = false
     /* Create the SCALAR token and append it to the queue. */
-    _PlainScalarScanner.create(this~_scanToNextToken())
+    let s = _PlainScalarScanner.create(this~_scanToNextToken())
+    s.apply(state)
 
   /*
    * Increase the flow level and resize the simple key list if needed.
@@ -657,27 +663,27 @@ primitive _LineTrailScanner
 
   fun scan(startMark: YamlMark val, errorContext: String, nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
     if not state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this)
     end
 
     while state.buffer.isBlank() do
       state.skip()
       if not state.buffer.available() then
-        return ScanPaused
+        return ScanPaused(this)
       end
     end
-    _CommentScanner~scan(_EOLScanner~scan(startMark, errorContext, nextScanner))
+    _CommentScanner.scan(_EOLScanner~scan(startMark, errorContext, nextScanner))
 
 
 primitive _CommentScanner
   fun scan(nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
     if not state.buffer.available() then
-      ScanPaused
+      ScanPaused(this)
     end
     if state.buffer.check('#') then
-      _SkipLineScanner~scan(nextScanner)
+      _SkipLineScanner.scan(nextScanner)
     else
-      nextScanner
+      nextScanner.apply(state)
     end
 
 
@@ -691,28 +697,28 @@ primitive _EOLScanner
     /* Eat a line break. */
     if state.buffer.isBreak() then
       if not state.buffer.available(2) then
-        return ScanPaused
+        return ScanPaused(this)
       end
       state.skipLine()
     end
-    nextScanner
+    nextScanner.apply(state)
 
 
 primitive _SkipLineScanner
 
   fun scan(nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
     if not state.buffer.available() then
-      return ScanPaused
+      return ScanPaused(this)
     end
     while not state.buffer.isBreakZ() do
       state.skip()
       if not state.buffer.available() then
-        return ScanPaused
+        return ScanPaused(this)
       end
     end
-    nextScanner
+    nextScanner.apply(state)
 
-class _AnchorScanner
+class _AnchorScanner is _Scanner
   let _tokenConstructor: {(YamlMark, YamlMark, String): _YAMLToken[Any]}
   let _errorName: String
   let _startMark: YamlMark val
@@ -727,20 +733,20 @@ class _AnchorScanner
     _startMark = startMark
     _nextScanner = nextScanner
 
-  fun scan(state: _ScannerState): _ScanResult ? =>
+  fun ref apply(state: _ScannerState): _ScanResult ? =>
     /* Eat the indicator character. */
     state.skip()
-    this~_scanAnchor()
+    this._scanAnchor(state)
 
   fun _scanAnchor(state: _ScannerState): _ScanResult ? =>
     if not state.available() then
-      return ScanPaused
+      return ScanPaused(this~_scanAnchor())
     end
     while state.isAlpha() do
       state.read(_anchor)
       length = length + 1
       if not state.available() then
-        return ScanPaused
+        return ScanPaused(this~_scanAnchor())
       end
     end
     if ((length == 0) or not (state.isBlankZ() or state.check('?')
@@ -753,4 +759,4 @@ class _AnchorScanner
     let endMark = state.mark.clone()
     /* Create a token. */
     state.emitToken(_tokenConstructor(_startMark, endMark, _anchor))
-    _nextScanner
+    _nextScanner.apply(state)
