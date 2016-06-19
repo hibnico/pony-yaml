@@ -7,7 +7,8 @@ class _FlowScalarScanner is _Scanner
   let _nextScanner: _Scanner
   let _startMark: YamlMark val
   var _string: (None | String trn) = recover String.create() end
-  var _scalarBlanks: _ScalarBlanks trn = recover _ScalarBlanks.create() end
+  var _scalarBlanks: (None | _ScalarBlanks trn) = recover _ScalarBlanks.create() end
+  var _firstLineBreakScanner: (None | _FirstLineBreakScanner) = None
 
   new create(single: Bool, startMark: YamlMark val, nextScanner: _Scanner) =>
     _single = single
@@ -40,7 +41,7 @@ class _FlowScalarScanner is _Scanner
     if state.isZ() then
       return ScanError("while scanning a quoted scalar", _startMark, "found unexpected end of stream")
     end
-    _scalarBlanks.leadingBlank = false
+    (_scalarBlanks as _ScalarBlanks trn).leadingBlank = false
     this._scanNonBlank(state)
 
   fun ref _scanNonBlank(state: _ScannerState): _ScanResult ? =>
@@ -95,7 +96,7 @@ class _FlowScalarScanner is _Scanner
     end
     state.skip()
     state.skipLine()
-    _scalarBlanks.leadingBlank = true
+    (_scalarBlanks as _ScalarBlanks trn).leadingBlank = true
     this._scanEndNonBlank(state)
 
   fun ref _scanEndNonBlank(state: _ScannerState): _ScanResult ? =>
@@ -187,10 +188,10 @@ class _FlowScalarScanner is _Scanner
     while state.isBlank() or state.isBreak() do
       if state.isBlank() then
         /* Consume a space or a tab character. */
-        if not _scalarBlanks.leadingBlank then
-          match state.read((_scalarBlanks.whitespaces = None) as String trn^)
+        if not (_scalarBlanks as _ScalarBlanks trn).leadingBlank then
+          match state.read(((_scalarBlanks as _ScalarBlanks trn).whitespaces = None) as String trn^)
           | let e: ScanError => return e
-          | let s: String trn => _scalarBlanks.whitespaces = consume s
+          | let s: String trn => (_scalarBlanks as _ScalarBlanks trn).whitespaces = consume s
           else
             error
           end
@@ -198,7 +199,8 @@ class _FlowScalarScanner is _Scanner
           state.skip()
         end
       else
-        let s: _FirstLineBreakScanner = _FirstLineBreakScanner.create(_scalarBlanks, this~_scanBlank())
+        let s: _FirstLineBreakScanner = _FirstLineBreakScanner.create((_scalarBlanks = None) as _ScalarBlanks trn^, this~_endFirstLineBreak())
+        _firstLineBreakScanner = s
         return s.apply(state)
       end
       if not state.available() then
@@ -206,30 +208,32 @@ class _FlowScalarScanner is _Scanner
       end
     end
     /* Join the whitespaces or fold line breaks. */
-    if _scalarBlanks.leadingBlank then
+    if (_scalarBlanks as _ScalarBlanks trn).leadingBlank then
       /* Do we need to fold line breaks? */
-      if ((_scalarBlanks.leadingBreak as String trn).size() > 0) and ((_scalarBlanks.leadingBreak as String trn)(0) == '\n') then
-        if (_scalarBlanks.trailingBreaks as String trn).size() == 0 then
+      if (((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).size() > 0)
+         and (((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn)(0) == '\n') then
+        if ((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).size() == 0 then
           (_string as String trn).push(' ')
         else
-          (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
-          (_scalarBlanks.trailingBreaks as String trn).clear()
+          (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clone())
+          ((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clear()
         end
-        (_scalarBlanks.leadingBreak as String trn).clear()
+        ((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).clear()
       else
-        (_string as String trn).append((_scalarBlanks.leadingBreak as String trn).clone())
-        (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
-        (_scalarBlanks.leadingBreak as String trn).clear()
-        (_scalarBlanks.trailingBreaks as String trn).clear()
+        (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).clone())
+        (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clone())
+        ((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).clear()
+        ((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clear()
       end
     else
-      (_string as String trn).append((_scalarBlanks.whitespaces as String trn).clone())
-      (_scalarBlanks.whitespaces as String trn).clear()
+      (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).whitespaces as String trn).clone())
+      ((_scalarBlanks as _ScalarBlanks trn).whitespaces as String trn).clear()
     end
 
   fun ref _endFirstLineBreak(state: _ScannerState): _ScanResult ? =>
     let s: _FirstLineBreakScanner = _firstLineBreakScanner as _FirstLineBreakScanner
-    _scalarBlanks = (s._scalarBlanks = None) as _scalarBlanks
+    _scalarBlanks = (s.scalarBlanks = None)
+    this._scanBlank(state)
 
   fun ref _scanContentEnd(state: _ScannerState): _ScanResult ? =>
     /* Eat the right quote. */

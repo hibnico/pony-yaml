@@ -1,13 +1,15 @@
 
+// let MAX_NUMBER_LENGTH: USize = 256
+
 class Option[T]
   var _value : (None | T)
   new none() => _value = None
-  new create(v: T^) => _value = v
+  new create(v: T) => _value = consume v
   fun ref set(v: T) => _value = consume v
-  fun ref giveup(): T ? => (_value = None) as T^
+  fun ref giveup(): T^ ? => (_value = None) as T^
   fun isNone(): Bool => _value is None
   fun value(): T ? => _value as T
-  fun ref run(runner: {(T): T^}) => set(runner(giveup()))
+//  fun ref run(runner: {(T): T^}) ? => set(runner(giveup()))
 
 
 class ScanError
@@ -54,5 +56,8 @@ class YamlMark
     line = line'
     column = column'
 
-  fun box clone(): YamlMark val =>
-    recover val YamlMark.create(index, line, column) end
+  fun clone(): YamlMark val =>
+    let i = index
+    let l = line
+    let c = column
+    recover val YamlMark.create(i, l, c) end

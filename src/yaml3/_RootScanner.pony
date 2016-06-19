@@ -4,7 +4,7 @@ class _RootScanner
 
   fun ref apply(state: _ScannerState): _ScanResult ? =>
     if not state.available() then
-      return ScanPaused(this~scan())
+      return ScanPaused(this)
     end
     _streamStart(state)
     this._scanToNextToken(state)
@@ -140,7 +140,8 @@ class _RootScanner
             and state.check('-', 1)
             and state.check('-', 2)
             and state.isBlankZ(3) then
-      return this._scanDocumentIndicator(YAML_DOCUMENT_START_TOKEN, state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlDocumentStartToken.create(startMark, endMark) end
+      return this._scanDocumentIndicator(cons, state)
     end
 
     /* Is it the document end indicator? */
@@ -149,27 +150,32 @@ class _RootScanner
             and state.check('.', 1)
             and state.check('.', 2)
             and state.isBlankZ(3) then
-      return this._scanDocumentIndicator(YAML_DOCUMENT_END_TOKEN, state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlDocumentEndToken.create(startMark, endMark) end
+      return this._scanDocumentIndicator(cons, state)
     end
 
     /* Is it the flow sequence start indicator? */
     if state.check('[') then
-      return this._scanFlowCollectionStart(YAML_FLOW_SEQUENCE_START_TOKEN, state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlFlowMappingStartToken.create(startMark, endMark) end
+      return this._scanFlowCollectionStart(cons, state)
     end
 
     /* Is it the flow mapping start indicator? */
     if state.check('{') then
-      return this._scanFlowCollectionStart(YAML_FLOW_MAPPING_START_TOKEN, state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlFlowMappingStartToken.create(startMark, endMark) end
+      return this._scanFlowCollectionStart(cons, state)
     end
 
     /* Is it the flow sequence end indicator? */
     if state.check(']') then
-      return this._scanFlowCollectionEnd(YAML_FLOW_SEQUENCE_END_TOKEN, state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlFlowSequenceEndToken.create(startMark, endMark) end
+      return this._scanFlowCollectionEnd(cons, state)
     end
 
     /* Is it the flow mapping end indicator? */
     if state.check('}') then
-      return this._scanFlowCollectionEnd(YAML_FLOW_MAPPING_END_TOKEN, state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlFlowMappingEndToken.create(startMark, endMark) end
+      return this._scanFlowCollectionEnd(cons, state)
     end
 
     /* Is it the flow entry indicator? */
@@ -194,12 +200,14 @@ class _RootScanner
 
     /* Is it an alias? */
     if state.check('*') then
-      return this._scanAnchor(_YamlAliasToken~create(), "alias", state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val, value: String) : _YAMLToken => _YamlAliasToken.create(startMark, endMark, value) end
+      return this._scanAnchor(cons, "alias", state)
     end
 
     /* Is it an anchor? */
     if state.check('&') then
-      return this._scanAnchor(_YamlAnchorToken~create(), "anchor", state)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val, value: String) : _YAMLToken => _YamlAnchorToken.create(startMark, endMark, value) end
+      return this._scanAnchor(cons, "anchor", state)
     end
 
     /* Is it a tag? */
@@ -265,8 +273,7 @@ class _RootScanner
     /*
      * If we don't determine the token type so far, it is an error.
      */
-    _YamlError("while scanning for the next token", state.mark.clone(),
-            "found character that cannot start any token")
+    ScanError("while scanning for the next token", state.mark.clone(), "found character that cannot start any token")
 
   /*
    * Produce the STREAM-END token and shut down the scanner.
@@ -307,7 +314,7 @@ class _RootScanner
   /*
    * Produce the DOCUMENT-START or DOCUMENT-END token.
    */
-  fun ref _scanDocumentIndicator(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken}, state: _ScannerState): _ScanResult ? =>
+  fun ref _scanDocumentIndicator(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val, state: _ScannerState): _ScanResult ? =>
     /* Reset the indentation level. */
     state.unrollIndent(state.mark.column)
     /* Reset simple keys. */
@@ -316,7 +323,7 @@ class _RootScanner
     end
     state.simpleKeyAllowed = false
     /* Consume the token. */
-    let startmark = state.mark.clone()
+    let startMark = state.mark.clone()
     state.skip(3)
     let endMark = state.mark.clone()
     /* Create the DOCUMENT-START or DOCUMENT-END token. */
@@ -326,7 +333,7 @@ class _RootScanner
   /*
    * Produce the FLOW-SEQUENCE-START or FLOW-MAPPING-START token.
    */
-  fun ref _scanFlowCollectionStart(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken}, state: _ScannerState): _ScanResult ? =>
+  fun ref _scanFlowCollectionStart(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val, state: _ScannerState): _ScanResult ? =>
     /* The indicators '[' and '{' may start a simple key. */
     match _saveSimpleKey(state)
     | let e: ScanError => return e
@@ -337,7 +344,7 @@ class _RootScanner
     state.simpleKeyAllowed = true
     /* Consume the token. */
     let startMark = state.mark.clone()
-    buffer.skip()
+    state.skip()
     let endMark = state.mark.clone()
     /* Create the FLOW-SEQUENCE-START of FLOW-MAPPING-START token. */
     state.emitToken(tokenConstructor(startMark, endMark))
@@ -346,7 +353,7 @@ class _RootScanner
   /*
    * Produce the FLOW-SEQUENCE-END or FLOW-MAPPING-END token.
    */
-  fun ref _scanFlowCollectionEnd(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken}, state: _ScannerState): _ScanResult ? =>
+  fun ref _scanFlowCollectionEnd(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val, state: _ScannerState): _ScanResult ? =>
     /* Reset any potential simple key on the current flow level. */
     match _removeSimpleKey(state)
     | let e: ScanError => return e
@@ -392,7 +399,8 @@ class _RootScanner
         return ScanError(None, state.mark.clone(), "block sequence entries are not allowed in this context")
       end
       /* Add the BLOCK-SEQUENCE-START token if needed. */
-      state.rollIndent(state.mark.column, YAML_BLOCK_SEQUENCE_START_TOKEN, state.mark.clone())
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlBlockSequenceStartToken.create(startMark, endMark) end
+      state.rollIndent(state.mark.column, cons, state.mark.clone())
     else
       /*
        * It is an error for the '-' indicator to occur in the flow context,
@@ -426,7 +434,8 @@ class _RootScanner
         return ScanError(None, state.mark.clone(), "mapping keys are not allowed in this context")
       end
       /* Add the BLOCK-MAPPING-START token if needed. */
-      state.rollIndent(state.mark.column, YAML_BLOCK_MAPPING_START_TOKEN, state.mark.clone())
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlBlockMappingStartToken.create(startMark, endMark) end
+      state.rollIndent(state.mark.column, cons, state.mark.clone())
     end
     /* Reset any potential simple keys on the current flow level. */
     match _removeSimpleKey(state)
@@ -439,7 +448,7 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the KEY token and append it to the queue. */
-    state.emitToken(_YAMLToken(YAML_KEY_TOKEN, startMark, endMark))
+    state.emitToken(_YamlKeyToken(startMark, endMark))
     this._scanToNextToken(state)
 
   /*
@@ -450,9 +459,10 @@ class _RootScanner
     /* Have we found a simple key? */
     if simpleKey.possible then
       /* Create the KEY token and insert it into the queue. */
-      state.emitToken(_YAMLToken(YAML_KEY_TOKEN, simpleKey.mark, simpleKey.mark))
+      state.emitToken(_YamlKeyToken(simpleKey.mark, simpleKey.mark))
       /* In the block context, we may need to add the BLOCK-MAPPING-START token. */
-      state.rollIndent(simpleKey.mark.column, YAML_BLOCK_MAPPING_START_TOKEN, simpleKey.mark, simpleKey.tokenNumber)
+      let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlBlockMappingStartToken.create(startMark, endMark) end
+      state.rollIndent(simpleKey.mark.column, cons, simpleKey.mark, simpleKey.tokenNumber)
       /* Remove the simple key. */
       simpleKey.possible = false
       /* A simple key cannot follow another simple key. */
@@ -466,7 +476,8 @@ class _RootScanner
           return ScanError(None, state.mark.clone(), "mapping values are not allowed in this context")
         end
         /* Add the BLOCK-MAPPING-START token if needed. */
-        state.rollIndent(state.mark.column, YAML_BLOCK_MAPPING_START_TOKEN, state.mark.clone())
+        let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlBlockMappingStartToken.create(startMark, endMark) end
+        state.rollIndent(state.mark.column, cons, state.mark.clone())
       end
       /* Simple keys after ':' are allowed in the block context. */
       state.simpleKeyAllowed = state.flowLevel == 0
@@ -476,13 +487,13 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the VALUE token and append it to the queue. */
-    state.emitToken(_YAMLToken(YAML_VALUE_TOKEN, startMark, endMark))
+    state.emitToken(_YamlValueToken(startMark, endMark))
     this._scanToNextToken(state)
 
   /*
    * Produce the ALIAS or ANCHOR token.
    */
-  fun ref _scanAnchor(tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken}, errorName: String,
+  fun ref _scanAnchor(tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken} val, errorName: String,
         state: _ScannerState): _ScanResult ? =>
     /* An anchor or an alias could be a simple key. */
     match _saveSimpleKey(state)
@@ -491,7 +502,7 @@ class _RootScanner
     /* A simple key cannot follow an anchor or an alias. */
     state.simpleKeyAllowed = false
     /* Create the ALIAS or ANCHOR token and append it to the queue. */
-    let s = _AnchorScanner.create(tokenConstructor, errorName, this~_scanToNextToken())
+    let s = _AnchorScanner.create(tokenConstructor, errorName, state.mark.clone(), this~_scanToNextToken())
     s.apply(state)
 
   /*

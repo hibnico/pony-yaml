@@ -28,7 +28,7 @@ class _ScannerState
    * append or insert the specified token into the token queue.
    *
    */
-  fun ref rollIndent(column: USize, tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken},
+  fun ref rollIndent(column: USize, tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val,
                   m: YamlMark val, number: (U16 | None) = None) ? =>
     /* In the flow context, do nothing. */
     if flowLevel > 0 then

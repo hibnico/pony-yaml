@@ -162,7 +162,7 @@ class _PlainScalarScanner is _Scanner
     this._scanContent(state)
 
   fun ref _scanEnd(state: _ScannerState): _ScanResult ? =>
-    state.emitToken(_YamlScalarToken(_startMark, _endMark, _YamlScalarTokenData((_string = None) as String trn^, YAML_PLAIN_SCALAR_STYLE)))
+    state.emitToken(_YamlScalarToken(_startMark, _endMark, (_string = None) as String trn^, _YamlPlainScalarStyle))
     /* Note that we change the 'simple_key_allowed' flag. */
     if _scalarBlanks.leadingBlank then
       state.simpleKeyAllowed = true

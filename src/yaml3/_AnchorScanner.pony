@@ -1,13 +1,13 @@
 
 class _AnchorScanner is _Scanner
-  let _tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken}
+  let _tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken} val
   let _errorName: String
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   var _anchor: (None | String trn) = recover String.create() end
   var _length: USize = 0
 
-  new create(tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken}, errorName: String,
+  new create(tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken} val, errorName: String,
              startMark: YamlMark val, nextScanner: _Scanner) =>
     _tokenConstructor = tokenConstructor
     _errorName = errorName

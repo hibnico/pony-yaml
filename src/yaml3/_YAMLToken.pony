@@ -177,7 +177,8 @@ primitive _YamlFoldedScalarStyle
 primitive _YamlLiteralScalarStyle
 primitive _YamlDoubleQuotedScalarStyle
 primitive _YamlSingleQuotedScalarStyle
-type _YamlScalarStyle is (_YamlFoldedScalarStyle | _YamlLiteralScalarStyle | _YamlDoubleQuotedScalarStyle | _YamlSingleQuotedScalarStyle)
+primitive _YamlPlainScalarStyle
+type _YamlScalarStyle is (_YamlFoldedScalarStyle | _YamlLiteralScalarStyle | _YamlDoubleQuotedScalarStyle | _YamlSingleQuotedScalarStyle | _YamlPlainScalarStyle)
 class val _YamlScalarToken is _YAMLToken
   /** The beginning of the token. */
   let startMark: YamlMark val
@@ -185,14 +186,11 @@ class val _YamlScalarToken is _YAMLToken
   let endMark: YamlMark val
   /** The scalar value. */
   let value: String
-  /** The length of the scalar value. */
-  let length: USize
   /** The scalar style. */
   let style: _YamlScalarStyle
 
-  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String, length': USize, style': _YamlScalarStyle) =>
+  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String, style': _YamlScalarStyle) =>
     startMark = startMark'
     endMark = endMark'
     value = value'
-    length = length'
     style = style'
