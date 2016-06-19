@@ -1,158 +1,198 @@
 /** Token types. */
 
-trait val _YamlTokenData
+trait val _YAMLToken
 
-class _YAMLToken[TD: _YamlTokenData val]
+class _SimpleYAMLToken is _YAMLToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
   let endMark: YamlMark val
-  /** The token data. */
-  let data: TD
 
-  new val create(startMark': YamlMark val, endMark': YamlMark val, data': TD) =>
+  new val create(startMark': YamlMark val, endMark': YamlMark val) =>
     startMark = startMark'
     endMark = endMark'
-    data = data'
-
-primitive _NoYamlTokenData is _YamlTokenData
 
 
 /** An empty token. */
-type _YamlNoToken is _YAMLToken[_NoYamlTokenData]
+type _YamlNoToken is _SimpleYAMLToken
 
 
 /** A STREAM-START token. */
-class val _YamlStreamStartTokenData is _YamlTokenData
+class val _YamlStreamStartToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The stream encoding. */
   let encoding: String
-  new val create(encoding': String) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, encoding': String) =>
+    startMark = startMark'
+    endMark = endMark'
     encoding = encoding'
-type _YamlStreamStartToken is _YAMLToken[_YamlStreamStartTokenData]
 
 
 /** A STREAM-END token. */
-type _YamlStreamEndToken is _YAMLToken[_NoYamlTokenData]
+type _YamlStreamEndToken is _SimpleYAMLToken
 
 
 /** A VERSION-DIRECTIVE token. */
-class val _YamlVersionDirectiveTokenData is _YamlTokenData
+class val _YamlVersionDirectiveToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The major version number. */
   let major: U16
   /** The minor version number. */
   let minor: U16
-  new val create(major': U16, minor': U16) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, major': U16, minor': U16) =>
+    startMark = startMark'
+    endMark = endMark'
     major = major'
     minor = minor'
-type _YamlVersionDirectiveToken is _YAMLToken[_YamlVersionDirectiveTokenData]
 
 
 /** A TAG-DIRECTIVE token. */
-class val _YamlTagDirectiveTokenData is _YamlTokenData
+class val _YamlTagDirectiveToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The tag handle. */
   let handle: String
   /** The tag prefix. */
   let prefix: String
-  new val create(handle': String, prefix': String) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, handle': String, prefix': String) =>
+    startMark = startMark'
+    endMark = endMark'
     handle = handle'
     prefix = prefix'
-type _YamlTagDirectiveToken is _YAMLToken[_YamlTagDirectiveTokenData]
 
 
 /** A DOCUMENT-START token. */
-type _YamlDocumentStartToken is _YAMLToken[_NoYamlTokenData]
+type _YamlDocumentStartToken is _SimpleYAMLToken
 
 
 /** A DOCUMENT-END token. */
-type _YamlDocumentEndToken is _YAMLToken[_NoYamlTokenData]
+type _YamlDocumentEndToken is _SimpleYAMLToken
 
 
 /** A BLOCK-SEQUENCE-START token. */
-type _YamlBlockSequenceStartToken is _YAMLToken[_NoYamlTokenData]
+type _YamlBlockSequenceStartToken is _SimpleYAMLToken
 
 
 /** A BLOCK-SEQUENCE-END token. */
-type _YamlBlockMappingStartToken is _YAMLToken[_NoYamlTokenData]
+type _YamlBlockMappingStartToken is _SimpleYAMLToken
 
 
 /** A BLOCK-END token. */
-type _YamlBlockEndToken is _YAMLToken[_NoYamlTokenData]
+type _YamlBlockEndToken is _SimpleYAMLToken
 
 
 /** A FLOW-SEQUENCE-START token. */
-type _YamlFlowSequenceStartToken is _YAMLToken[_NoYamlTokenData]
+type _YamlFlowSequenceStartToken is _SimpleYAMLToken
 
 
 /** A FLOW-SEQUENCE-END token. */
-type _YamlFlowSequenceEndToken is _YAMLToken[_NoYamlTokenData]
+type _YamlFlowSequenceEndToken is _SimpleYAMLToken
 
 
 /** A FLOW-MAPPING-START token. */
-type _YamlFlowMappingStartToken is _YAMLToken[_NoYamlTokenData]
+type _YamlFlowMappingStartToken is _SimpleYAMLToken
 
 
 /** A FLOW-MAPPING-END token. */
-type _YamlFlowMappingEndToken is _YAMLToken[_NoYamlTokenData]
+type _YamlFlowMappingEndToken is _SimpleYAMLToken
 
 
 /** A BLOCK-ENTRY token. */
-type _YamlBlockEntryToken is _YAMLToken[_NoYamlTokenData]
+type _YamlBlockEntryToken is _SimpleYAMLToken
 
 
 /** A FLOW-ENTRY token. */
-type _YamlFlowEntryToken is _YAMLToken[_NoYamlTokenData]
+type _YamlFlowEntryToken is _SimpleYAMLToken
 
 
 /** A KEY token. */
-type _YamlKeyToken is _YAMLToken[_NoYamlTokenData]
+type _YamlKeyToken is _SimpleYAMLToken
 
 
 /** A VALUE token. */
-type _YamlValueToken is _YAMLToken[_NoYamlTokenData]
+type _YamlValueToken is _SimpleYAMLToken
 
 
 /** An ALIAS token. */
-class val _YamlAliasTokenData is _YamlTokenData
+class val _YamlAliasToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The alias value. */
   let value: String
-  new val create(value': String) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String) =>
+    startMark = startMark'
+    endMark = endMark'
     value = value'
-type _YamlAliasToken is _YAMLToken[_YamlAliasTokenData]
 
 
 /** An ANCHOR token. */
-class val _YamlAnchorTokenData is _YamlTokenData
+class val _YamlAnchorToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The anchor value. */
   let value: String
-  new val create(value': String) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String) =>
+    startMark = startMark'
+    endMark = endMark'
     value = value'
-type _YamlAnchorToken is _YAMLToken[_YamlAnchorTokenData]
 
 
 /** A TAG token. */
-class val _YamlTagTokenData is _YamlTokenData
+class val _YamlTagToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The tag handle. */
   let handle: String
   /** The tag suffix. */
   let suffix: String
-  new val create(handle': String, suffix': String) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, handle': String, suffix': String) =>
+    startMark = startMark'
+    endMark = endMark'
     handle = handle'
     suffix = suffix'
-type _YamlTagToken is _YAMLToken[_YamlTagTokenData]
 
 
 /** A SCALAR token. */
-primitive _YamlStyle1
-type _YamlScalarStyle is (_YamlStyle1)
-class val _YamlScalarTokenData is _YamlTokenData
+primitive _YamlFoldedScalarStyle
+primitive _YamlLiteralScalarStyle
+primitive _YamlDoubleQuotedScalarStyle
+primitive _YamlSingleQuotedScalarStyle
+type _YamlScalarStyle is (_YamlFoldedScalarStyle | _YamlLiteralScalarStyle | _YamlDoubleQuotedScalarStyle | _YamlSingleQuotedScalarStyle)
+class val _YamlScalarToken is _YAMLToken
+  /** The beginning of the token. */
+  let startMark: YamlMark val
+  /** The end of the token. */
+  let endMark: YamlMark val
   /** The scalar value. */
   let value: String
   /** The length of the scalar value. */
   let length: USize
   /** The scalar style. */
   let style: _YamlScalarStyle
-  new val create(value': String, length': USize, style': _YamlScalarStyle) =>
+
+  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String, length': USize, style': _YamlScalarStyle) =>
+    startMark = startMark'
+    endMark = endMark'
     value = value'
     length = length'
     style = style'
-type _YamlScalarToken is _YAMLToken[_YamlScalarTokenData]

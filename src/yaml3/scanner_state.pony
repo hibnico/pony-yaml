@@ -1,6 +1,6 @@
 
 class _ScannerState
-  var _scanner: _Scanner = _RootScanner
+  var _scanner: _Scanner = _RootScanner.create()
   let mark: YamlMark = YamlMark.create()
   let _data: Array[U8] = Array[U8].create(1024)
   var _pos: USize = 0
@@ -8,6 +8,7 @@ class _ScannerState
   var flowLevel: USize = 0
   var indent: USize = 0
   let indents: Array[USize] = Array[USize].create(5)
+  var simpleKeys: Array[_YamlSimpleKey] = Array[_YamlSimpleKey].create(5)
 
   fun ref run(): (ScanDone | ScanPaused | ScanError) ? =>
     match _scanner.apply(this)
@@ -18,8 +19,57 @@ class _ScannerState
       error
     end
 
-  fun emitToken(token: _YAMLToken[Any]) =>
+  fun emitToken(token: _YAMLToken) =>
     None
+
+  /*
+   * Push the current indentation level to the stack and set the new level
+   * the current column is greater than the indentation level.  In this case,
+   * append or insert the specified token into the token queue.
+   *
+   */
+  fun ref rollIndent(column: USize, tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken},
+                  m: YamlMark val, number: (U16 | None) = None) ? =>
+    /* In the flow context, do nothing. */
+    if flowLevel > 0 then
+      return
+    end
+
+    if indent < column then
+      /*
+       * Push the current indentation level to the stack and set the new
+       * indentation level.
+       */
+      indents.push(indent)
+      indent = column
+      /* Create a token and insert it into the queue. */
+      emitToken(tokenConstructor(m, m))
+      if number is None then
+        tokens.enqueue(token)
+      else
+        tokens.insert((number as U16) - tokens_parsed, token)
+      end
+    end
+
+  /*
+   * Pop indentation levels from the indents stack until the current level
+   * becomes less or equal to the column.  For each intendation level, append
+   * the BLOCK-END token.
+   */
+  fun ref unrollIndent(column: (USize | None) = None) ? =>
+    /* In the flow context, do nothing. */
+    if flowLevel > 0 then
+      return
+    end
+
+    /* Loop through the intendation levels in the stack. */
+    while indent > column do
+      /* Create a token and append it to the queue. */
+      let m = mark.clone()
+      emitToken(_YamlBlockEndToken(m, m))
+      /* Pop the indentation level. */
+      indent = indents.pop()
+    end
 
   fun available(nb: USize = 1): Bool =>
     (_data.size() - _pos) >= nb

@@ -2,20 +2,20 @@
 class Option[T]
   var _value : (None | T)
   new none() => _value = None
-  new create(v: T) => _value = v
-  fun ref set(v: (None | T)) => _value = consume v
-  fun ref switchToNone(): T ? => (_value = None) as T^
+  new create(v: T^) => _value = v
+  fun ref set(v: T) => _value = consume v
+  fun ref giveup(): T ? => (_value = None) as T^
   fun isNone(): Bool => _value is None
   fun value(): T ? => _value as T
-  fun run(runner: {(T): T^}) => set(runner(switchToNone()))
+  fun ref run(runner: {(T): T^}) => set(runner(giveup()))
 
 
 class ScanError
-  let problem: String
+  let problem: (None | String)
   let mark: YamlMark val
   let context: String
 
-  new create(problem': String, mark': YamlMark val, context': String) =>
+  new create(problem': (None | String), mark': YamlMark val, context': String) =>
     problem = problem'
     mark = mark'
     context = context'
