@@ -1,0 +1,170 @@
+
+/*
+ * Scan a plain scalar.
+ */
+class _PlainScalarScanner is _Scanner
+  let _nextScanner: _Scanner
+  let _startMark: YamlMark val
+  var _endMark: YamlMark val
+  var _string: (None | String trn) = None
+  var _scalarBlanks: _ScalarBlanks trn = recover _ScalarBlanks.create() end
+  var _indent: USize = 0
+
+  new create(startMark: YamlMark val, nextScanner: _Scanner) =>
+    _nextScanner = nextScanner
+    _startMark = startMark
+    _endMark = _startMark
+
+  fun ref apply(state: _ScannerState): _ScanResult ? =>
+    _indent = state.indent + 1
+    this._scanContent(state)
+
+  /* Consume the content of the plain scalar. */
+  fun ref _scanContent(state: _ScannerState): _ScanResult ? =>
+    /* Check for a document indicator. */
+    if not state.available(4) then
+      return ScanPaused(this~_scanContent())
+    end
+    if ((state.mark.column == 0) and
+        ((state.check('-', 0) and
+          state.check('-', 1) and
+          state.check('-', 2)) or
+         (state.check('.', 0) and
+          state.check('.', 1) and
+          state.check('.', 2))) and
+        state.isBlankZ(3)) then
+      return this._scanEnd(state)
+    end
+    /* Check for a comment. */
+    if state.check('#') then
+      return this._scanEnd(state)
+    end
+    this._scanNonBlank(state)
+
+
+  fun ref _scanNonBlank(state: _ScannerState): _ScanResult ? =>
+    if not state.available(2) then
+      return ScanPaused(this~_scanNonBlank())
+    end
+    /* Consume non-blank characters. */
+    while not state.isBlankZ() do
+      /* Check for 'x:x' in the flow context. TODO: Fix the test "spec-08-13". */
+      if (state.flowLevel > 0) and state.check(':') and not state.isBlankZ(1) then
+        return ScanError("while scanning a plain scalar", _startMark, "found unexpected ':'")
+      end
+
+      /* Check for indicators that may end a plain scalar. */
+      if ((state.check(':') and state.isBlankZ(1))
+              or ((state.flowLevel > 0) and
+                  (state.check(',') or state.check(':')
+                   or state.check('?') or state.check('[')
+                   or state.check(']') or state.check('{')
+                   or state.check('}')))) then
+        return this._scanNonBlankEnd(state)
+      end
+
+      /* Check if we need to join whitespaces and breaks. */
+      if _scalarBlanks.leadingBlank or ((_scalarBlanks.whitespaces as String trn).size() > 0) then
+        if _scalarBlanks.leadingBlank then
+          /* Do we need to fold line breaks? */
+          if ((_scalarBlanks.leadingBreak as String trn).size() > 0) and ((_scalarBlanks.leadingBreak as String trn)(0) == '\n') then
+            if (_scalarBlanks.trailingBreaks as String trn).size() == 0 then
+              (_string as String trn).push(' ')
+            else
+              (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
+              (_scalarBlanks.trailingBreaks as String trn).clear()
+            end
+            (_scalarBlanks.leadingBreak as String trn).clear()
+          else
+            (_string as String trn).append((_scalarBlanks.leadingBreak as String trn).clone())
+            (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
+            (_scalarBlanks.leadingBreak as String trn).clear()
+            (_scalarBlanks.trailingBreaks as String trn).clear()
+          end
+          _scalarBlanks.leadingBlank = false
+        else
+          (_string as String trn).append((_scalarBlanks.whitespaces as String trn).clone())
+          (_scalarBlanks.whitespaces as String trn).clear()
+        end
+      end
+      /* Copy the character. */
+      match state.read((_string = None) as String trn^)
+      | let e: ScanError => return e
+      | let s: String trn => _string = consume s
+      else
+        error
+      end
+      _endMark = state.mark.clone()
+      if not state.available(2) then
+        return ScanPaused(this~_scanNonBlank())
+      end
+    end
+    /* Is it the end? */
+    if not (state.isBlank() or state.isBreak()) then
+      return this.endloop(state)
+    end
+    this._scanBlank(state)
+
+
+  fun ref _scanBlank(state: _ScannerState): _ScanResult ? =>
+    /* Consume blank characters. */
+    if not state.available() then
+      return ScanPaused(this~_scanBlank())
+    end
+    while state.isBlank() or state.isBreak() do
+      if state.isBlank() then
+        /* Check for tab character that abuse intendation. */
+        if _scalarBlanks.leadingBlank and (state.mark.column < _indent) and state.isTab() then
+          return ScanError("while scanning a plain scalar", _startMark, "found a tab character that violate intendation")
+        end
+        /* Consume a space or a tab character. */
+        if not _scalarBlanks.leadingBlank then
+          match state.read((_scalarBlanks.whitespaces = None) as String trn^)
+          | let e: ScanError => return e
+          | let s: String trn => _scalarBlanks.whitespaces = consume s
+          else
+            error
+          end
+        else
+          state.skip()
+        end
+      else
+        if not state.available(2) then
+          return ScanPaused(this~_scanBlank())
+        end
+        /* Check if it is a first line break. */
+        if not _scalarBlanks.leadingBlank then
+          (_scalarBlanks.whitespaces as String trn).clear()
+          match state.readLine((_scalarBlanks.leadingBreak = None) as String trn^)
+          | let e: ScanError => return e
+          | let s: String trn => _scalarBlanks.leadingBreak = consume s
+          else
+            error
+          end
+          _scalarBlanks.leadingBlank = true
+        else
+          match state.readLine((_scalarBlanks.trailingBreaks = None) as String trn^)
+          | let e: ScanError => return e
+          | let s: String trn => _scalarBlanks.trailingBreaks = consume s
+          else
+            error
+          end
+        end
+      end
+      if not state.available() then
+        return ScanPaused(this~_scanBlank())
+      end
+    end
+    /* Check intendation level. */
+    if (state.flowLevel == 0) and (state.mark.column < _indent) then
+      return this._scanEnd(state)
+    end
+    this._scanContent(state)
+
+  fun ref _scanEnd(state: _ScannerState): _ScanResult ? =>
+    state.emitToken(_YamlScalarToken(_startMark, _endMark, _YamlScalarTokenData((_string = None) as String trn^, YAML_PLAIN_SCALAR_STYLE)))
+    /* Note that we change the 'simple_key_allowed' flag. */
+    if _scalarBlanks.leadingBlank then
+      state.simpleKeyAllowed = true
+    end
+    _nextScanner.apply(state)
