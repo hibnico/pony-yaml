@@ -34,13 +34,13 @@ class _TagScanner is _Scanner
       return ScanError("while scanning a tag", _startMark, "did not find the expected '>'")
     end
     let tagURIScanner = _tagURIScanner as _TagURIScanner
-    _suffix = (tagURIScanner.uri = None) as String trn^
+    _suffix = (tagURIScanner.uri = None) as String iso^
     state.skip()
     this._scanEnd(state)
 
   fun ref _scanEndHandle(state: _ScannerState): _ScanResult ? =>
     let tagHandleScanner = _tagHandleScanner as _TagHandleScanner
-    let h: String trn = (tagHandleScanner.handle = None) as String trn^
+    let h: String iso = (tagHandleScanner.handle = None) as String iso^
     /* Check if it is, indeed, handle. */
     if (h(0) == '!') and (h.size() > 1) and (h(h.size() - 1) == '!') then
       _handle = consume h
@@ -57,14 +57,14 @@ class _TagScanner is _Scanner
 
   fun ref _scanEndUriWithHandle(state: _ScannerState): _ScanResult ? =>
     let tagURIScanner = _tagURIScanner as _TagURIScanner
-    _suffix = (tagURIScanner.uri = None) as String trn^
+    _suffix = (tagURIScanner.uri = None) as String iso^
     this._scanEnd(state)
 
   fun ref _scanEndUriWithBadHandle(state: _ScannerState): _ScanResult ? =>
     /* Set the handle to '!'. */
     _handle = "!"
     let tagURIScanner = _tagURIScanner as _TagURIScanner
-    _suffix = (tagURIScanner.uri = None) as String trn^
+    _suffix = (tagURIScanner.uri = None) as String iso^
     /*
      * A special case: the '!' tag.  Set the handle to '' and the
      * suffix to '!'.

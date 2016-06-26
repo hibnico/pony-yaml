@@ -5,9 +5,9 @@ class _URIEscapesScanner is _Scanner
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
   var width: USize = 0
-  var escaped: (None | String trn)
+  var escaped: (None | String iso)
 
-  new create(directive: Bool, escaped': String trn, mark: YamlMark val, nextScanner: _Scanner) =>
+  new create(directive: Bool, escaped': String iso, mark: YamlMark val, nextScanner: _Scanner) =>
     _directive = directive
     _startMark = mark
     _nextScanner = nextScanner
@@ -49,7 +49,7 @@ class _URIEscapesScanner is _Scanner
       end
 
       /* Copy the octet and move the pointers. */
-      (escaped as String trn).push(octet)
+      (escaped as String iso).push(octet)
       state.skip(3)
       width = width - 1
     until width == 0 end

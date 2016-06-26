@@ -1,10 +1,10 @@
 
 class _FirstLineBreakScanner
 
-  var scalarBlanks: (None | _ScalarBlanks trn)
+  var scalarBlanks: (None | _ScalarBlanks iso)
   var _nextScanner: _Scanner
 
-  new create(scalarBlanks': _ScalarBlanks trn, nextScanner: _Scanner) =>
+  new create(scalarBlanks': _ScalarBlanks iso, nextScanner: _Scanner) =>
     scalarBlanks = consume scalarBlanks'
     _nextScanner = nextScanner
 
@@ -13,19 +13,19 @@ class _FirstLineBreakScanner
       return ScanPaused(this)
     end
     /* Check if it is a first line break. */
-    if not (scalarBlanks as _ScalarBlanks trn).leadingBlank then
-      ((scalarBlanks as _ScalarBlanks trn).whitespaces as String trn).clear()
-      match state.readLine(((scalarBlanks as _ScalarBlanks trn).leadingBreak = None) as String trn^)
+    if not (scalarBlanks as _ScalarBlanks iso).leadingBlank then
+      ((scalarBlanks as _ScalarBlanks iso).whitespaces as String iso).clear()
+      match state.readLine(((scalarBlanks as _ScalarBlanks iso).leadingBreak = None) as String iso^)
       | let e: ScanError => return e
-      | let s: String trn => (scalarBlanks as _ScalarBlanks trn).leadingBreak = consume s
+      | let s: String iso => (scalarBlanks as _ScalarBlanks iso).leadingBreak = consume s
       else
         error
       end
-      (scalarBlanks as _ScalarBlanks trn).leadingBlank = true
+      (scalarBlanks as _ScalarBlanks iso).leadingBlank = true
     else
-      match state.readLine(((scalarBlanks as _ScalarBlanks trn).trailingBreaks = None) as String trn^)
+      match state.readLine(((scalarBlanks as _ScalarBlanks iso).trailingBreaks = None) as String iso^)
       | let e: ScanError => return e
-      | let s: String trn => (scalarBlanks as _ScalarBlanks trn).trailingBreaks = consume s
+      | let s: String iso => (scalarBlanks as _ScalarBlanks iso).trailingBreaks = consume s
       else
         error
       end

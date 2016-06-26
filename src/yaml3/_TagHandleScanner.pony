@@ -6,7 +6,7 @@ class _TagHandleScanner is _Scanner
   let _directive: Bool
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
-  var handle: (None | String trn) = recover String.create() end
+  var handle: (None | String iso) = recover String.create() end
 
   new create(directive: Bool, mark: YamlMark val, nextScanner: _Scanner) =>
     _directive = directive
@@ -23,7 +23,7 @@ class _TagHandleScanner is _Scanner
                 _startMark, "did not find expected '!'")
     end
     /* Copy the '!' character. */
-    (handle as String trn).push('!')
+    (handle as String iso).push('!')
     state.skip()
     this._scanAlpha(state)
 
@@ -33,8 +33,8 @@ class _TagHandleScanner is _Scanner
       return ScanPaused(this~_scanAlpha())
     end
     while state.isAlpha() do
-      match state.read((handle = None) as String trn^)
-      | let h: String trn => handle = consume h
+      match state.read((handle = None) as String iso^)
+      | let h: String iso => handle = consume h
       | let e: ScanError => return e
       else
         error
@@ -46,7 +46,7 @@ class _TagHandleScanner is _Scanner
 
     /* Check if the trailing character is '!' and copy it. */
     if state.check('!') then
-      (handle as String trn).push('!')
+      (handle as String iso).push('!')
       state.skip()
     else
       /*
@@ -55,7 +55,7 @@ class _TagHandleScanner is _Scanner
        * URI.
        */
 
-      if (_directive and not (((handle as String trn)(0) == '!') and ((handle as String trn).size() == 1))) then
+      if (_directive and not (((handle as String iso)(0) == '!') and ((handle as String iso).size() == 1))) then
         return ScanError("while parsing a tag directive", _startMark, "did not find expected '!'")
       end
     end

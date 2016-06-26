@@ -29,12 +29,12 @@ class _DirectiveScanner is _Scanner
   fun ref _scanValue(state: _ScannerState): _ScanResult ? =>
     let nameScanner = _nameScanner as _DirectiveNameScanner
     /* Is it a YAML directive? */
-    if (nameScanner.name as String trn) == "YAML" then
+    if (nameScanner.name as String iso) == "YAML" then
       let s = _VersionDirectiveValueScanner(_startMark, this~_scanVersion())
       _versionScanner = s
       s.apply(state)
     /* Is it a TAG directive? */
-    elseif (nameScanner.name as String trn) == "TAG" then
+    elseif (nameScanner.name as String iso) == "TAG" then
       let s = _TagDirectiveValueScanner(_startMark, this~_scanTagValue())
       _tagScanner = s
       s.apply(state)

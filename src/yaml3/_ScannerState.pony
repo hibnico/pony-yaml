@@ -111,7 +111,7 @@ class _ScannerState
       _pos = _pos + width()
     end
 
-  fun ref read(s: String trn): (ScanError | String trn^) ? =>
+  fun ref read(s: String iso): (ScanError | String iso^) ? =>
     let char = _data(_pos)
     if (char and 0x80) == 0x00 then
       s.push(char)
@@ -138,7 +138,7 @@ class _ScannerState
     mark.column = mark.column + 1
     consume s
 
-  fun ref readLine(s: String trn): (ScanError | String trn^) ? =>
+  fun ref readLine(s: String iso): (ScanError | String iso^) ? =>
     if check('\r') and check('\n', 1) then        /* CR LF -> LF */
       s.push('\n')
       _pos = _pos + 2

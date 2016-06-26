@@ -6,11 +6,11 @@ class _BlockScalarBreaksScanner is _Scanner
   let _startMark: YamlMark val
   let _endMark: YamlMark val
   let _nextScanner: _Scanner
-  var breaks: (None | String trn)
+  var breaks: (None | String iso)
   var indent : USize
   var _maxIndent: USize = 0
 
-  new create(indent': USize, breaks': String trn, startMark: YamlMark val, endMark: YamlMark val, nextScanner: _Scanner) =>
+  new create(indent': USize, breaks': String iso, startMark: YamlMark val, endMark: YamlMark val, nextScanner: _Scanner) =>
     indent = indent'
     _startMark = startMark
     _endMark = endMark
@@ -47,8 +47,8 @@ class _BlockScalarBreaksScanner is _Scanner
     if not state.available(2) then
       return ScanPaused(this~_scanLineBreak())
     end
-    match state.read((breaks = None) as String trn^)
-    | let b: String trn => breaks = consume b
+    match state.read((breaks = None) as String iso^)
+    | let b: String iso => breaks = consume b
     | let e: ScanError => return e
     else
       error

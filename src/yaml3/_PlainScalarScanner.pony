@@ -6,8 +6,8 @@ class _PlainScalarScanner is _Scanner
   let _nextScanner: _Scanner
   let _startMark: YamlMark val
   var _endMark: YamlMark val
-  var _string: (None | String trn) = None
-  var _scalarBlanks: _ScalarBlanks trn = recover _ScalarBlanks.create() end
+  var _string: (None | String iso) = None
+  var _scalarBlanks: _ScalarBlanks iso = recover _ScalarBlanks.create() end
   var _indent: USize = 0
 
   new create(startMark: YamlMark val, nextScanner: _Scanner) =>
@@ -60,37 +60,37 @@ class _PlainScalarScanner is _Scanner
                    or state.check('?') or state.check('[')
                    or state.check(']') or state.check('{')
                    or state.check('}')))) then
-        return this._scanNonBlankEnd(state)
+        break
       end
 
       /* Check if we need to join whitespaces and breaks. */
-      if _scalarBlanks.leadingBlank or ((_scalarBlanks.whitespaces as String trn).size() > 0) then
+      if _scalarBlanks.leadingBlank or ((_scalarBlanks.whitespaces as String iso).size() > 0) then
         if _scalarBlanks.leadingBlank then
           /* Do we need to fold line breaks? */
-          if ((_scalarBlanks.leadingBreak as String trn).size() > 0) and ((_scalarBlanks.leadingBreak as String trn)(0) == '\n') then
-            if (_scalarBlanks.trailingBreaks as String trn).size() == 0 then
-              (_string as String trn).push(' ')
+          if ((_scalarBlanks.leadingBreak as String iso).size() > 0) and ((_scalarBlanks.leadingBreak as String iso)(0) == '\n') then
+            if (_scalarBlanks.trailingBreaks as String iso).size() == 0 then
+              (_string as String iso).push(' ')
             else
-              (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
-              (_scalarBlanks.trailingBreaks as String trn).clear()
+              (_string as String iso).append((_scalarBlanks.trailingBreaks as String iso).clone())
+              (_scalarBlanks.trailingBreaks as String iso).clear()
             end
-            (_scalarBlanks.leadingBreak as String trn).clear()
+            (_scalarBlanks.leadingBreak as String iso).clear()
           else
-            (_string as String trn).append((_scalarBlanks.leadingBreak as String trn).clone())
-            (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
-            (_scalarBlanks.leadingBreak as String trn).clear()
-            (_scalarBlanks.trailingBreaks as String trn).clear()
+            (_string as String iso).append((_scalarBlanks.leadingBreak as String iso).clone())
+            (_string as String iso).append((_scalarBlanks.trailingBreaks as String iso).clone())
+            (_scalarBlanks.leadingBreak as String iso).clear()
+            (_scalarBlanks.trailingBreaks as String iso).clear()
           end
           _scalarBlanks.leadingBlank = false
         else
-          (_string as String trn).append((_scalarBlanks.whitespaces as String trn).clone())
-          (_scalarBlanks.whitespaces as String trn).clear()
+          (_string as String iso).append((_scalarBlanks.whitespaces as String iso).clone())
+          (_scalarBlanks.whitespaces as String iso).clear()
         end
       end
       /* Copy the character. */
-      match state.read((_string = None) as String trn^)
+      match state.read((_string = None) as String iso^)
       | let e: ScanError => return e
-      | let s: String trn => _string = consume s
+      | let s: String iso => _string = consume s
       else
         error
       end
@@ -101,10 +101,9 @@ class _PlainScalarScanner is _Scanner
     end
     /* Is it the end? */
     if not (state.isBlank() or state.isBreak()) then
-      return this.endloop(state)
+      return this._scanEnd(state)
     end
     this._scanBlank(state)
-
 
   fun ref _scanBlank(state: _ScannerState): _ScanResult ? =>
     /* Consume blank characters. */
@@ -119,9 +118,9 @@ class _PlainScalarScanner is _Scanner
         end
         /* Consume a space or a tab character. */
         if not _scalarBlanks.leadingBlank then
-          match state.read((_scalarBlanks.whitespaces = None) as String trn^)
+          match state.read((_scalarBlanks.whitespaces = None) as String iso^)
           | let e: ScanError => return e
-          | let s: String trn => _scalarBlanks.whitespaces = consume s
+          | let s: String iso => _scalarBlanks.whitespaces = consume s
           else
             error
           end
@@ -134,18 +133,18 @@ class _PlainScalarScanner is _Scanner
         end
         /* Check if it is a first line break. */
         if not _scalarBlanks.leadingBlank then
-          (_scalarBlanks.whitespaces as String trn).clear()
-          match state.readLine((_scalarBlanks.leadingBreak = None) as String trn^)
+          (_scalarBlanks.whitespaces as String iso).clear()
+          match state.readLine((_scalarBlanks.leadingBreak = None) as String iso^)
           | let e: ScanError => return e
-          | let s: String trn => _scalarBlanks.leadingBreak = consume s
+          | let s: String iso => _scalarBlanks.leadingBreak = consume s
           else
             error
           end
           _scalarBlanks.leadingBlank = true
         else
-          match state.readLine((_scalarBlanks.trailingBreaks = None) as String trn^)
+          match state.readLine((_scalarBlanks.trailingBreaks = None) as String iso^)
           | let e: ScanError => return e
-          | let s: String trn => _scalarBlanks.trailingBreaks = consume s
+          | let s: String iso => _scalarBlanks.trailingBreaks = consume s
           else
             error
           end
@@ -162,7 +161,7 @@ class _PlainScalarScanner is _Scanner
     this._scanContent(state)
 
   fun ref _scanEnd(state: _ScannerState): _ScanResult ? =>
-    state.emitToken(_YamlScalarToken(_startMark, _endMark, (_string = None) as String trn^, _YamlPlainScalarStyle))
+    state.emitToken(_YamlScalarToken(_startMark, _endMark, (_string = None) as String iso^, _YamlPlainScalarStyle))
     /* Note that we change the 'simple_key_allowed' flag. */
     if _scalarBlanks.leadingBlank then
       state.simpleKeyAllowed = true

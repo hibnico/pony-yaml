@@ -4,7 +4,7 @@ class _AnchorScanner is _Scanner
   let _errorName: String
   let _startMark: YamlMark val
   let _nextScanner: _Scanner
-  var _anchor: (None | String trn) = recover String.create() end
+  var _anchor: (None | String iso) = recover String.create() end
   var _length: USize = 0
 
   new create(tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken} val, errorName: String,
@@ -24,8 +24,8 @@ class _AnchorScanner is _Scanner
       return ScanPaused(this~_scanAnchor())
     end
     while state.isAlpha() do
-      match state.read((_anchor = None) as String trn^)
-      | let s: String trn => _anchor = consume s
+      match state.read((_anchor = None) as String iso^)
+      | let s: String iso => _anchor = consume s
       | let e: ScanError => return e
       end
       _length = _length + 1
@@ -42,5 +42,5 @@ class _AnchorScanner is _Scanner
     end
     let endMark = state.mark.clone()
     /* Create a token. */
-    state.emitToken(_tokenConstructor(_startMark, endMark, (_anchor = None) as String trn^))
+    state.emitToken(_tokenConstructor(_startMark, endMark, (_anchor = None) as String iso^))
     _nextScanner.apply(state)

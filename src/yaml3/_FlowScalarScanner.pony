@@ -6,8 +6,8 @@ class _FlowScalarScanner is _Scanner
   let _single: Bool
   let _nextScanner: _Scanner
   let _startMark: YamlMark val
-  var _string: (None | String trn) = recover String.create() end
-  var _scalarBlanks: (None | _ScalarBlanks trn) = recover _ScalarBlanks.create() end
+  var _string: (None | String iso) = recover String.create() end
+  var _scalarBlanks: (None | _ScalarBlanks iso) = recover _ScalarBlanks.create() end
   var _firstLineBreakScanner: (None | _FirstLineBreakScanner) = None
 
   new create(single: Bool, startMark: YamlMark val, nextScanner: _Scanner) =>
@@ -41,7 +41,7 @@ class _FlowScalarScanner is _Scanner
     if state.isZ() then
       return ScanError("while scanning a quoted scalar", _startMark, "found unexpected end of stream")
     end
-    (_scalarBlanks as _ScalarBlanks trn).leadingBlank = false
+    (_scalarBlanks as _ScalarBlanks iso).leadingBlank = false
     this._scanNonBlank(state)
 
   fun ref _scanNonBlank(state: _ScannerState): _ScanResult ? =>
@@ -52,7 +52,7 @@ class _FlowScalarScanner is _Scanner
     while not state.isBlankZ() do
       /* Check for an escaped single quote. */
       if (_single and state.check('\'') and state.check('\'', 1)) then
-        (_string as String trn).push('\'')
+        (_string as String iso).push('\'')
         state.skip(2)
       /* Check for the right quote. */
       elseif (state.check(if _single then '\'' else '"' end)) then
@@ -64,9 +64,9 @@ class _FlowScalarScanner is _Scanner
       elseif (not _single and state.check('\\')) then
         var codeLength : USize = 0
         /* Check the escape character. */
-        match _checkEscapeChar(state.at(1), (_string = None) as String trn^)
+        match _checkEscapeChar(state.at(1), (_string = None) as String iso^)
         | let e: ScanError => return e
-        | (let l: USize, let s: String trn) => codeLength = l; _string = consume s
+        | (let l: USize, let s: String iso) => codeLength = l; _string = consume s
         else
           error
         end
@@ -77,9 +77,9 @@ class _FlowScalarScanner is _Scanner
         end
       else
         /* It is a non-escaped non-blank character. */
-        match state.read((_string = None) as String trn^)
+        match state.read((_string = None) as String iso^)
         | let e: ScanError => return e
-        | let s: String trn => _string = consume s
+        | let s: String iso => _string = consume s
         else
           error
         end
@@ -96,7 +96,7 @@ class _FlowScalarScanner is _Scanner
     end
     state.skip()
     state.skipLine()
-    (_scalarBlanks as _ScalarBlanks trn).leadingBlank = true
+    (_scalarBlanks as _ScalarBlanks iso).leadingBlank = true
     this._scanEndNonBlank(state)
 
   fun ref _scanEndNonBlank(state: _ScannerState): _ScanResult ? =>
@@ -126,13 +126,13 @@ class _FlowScalarScanner is _Scanner
       return ScanError("while parsing a quoted scalar", _startMark, "found invalid Unicode character escape code")
     end
 
-    _string = _pushEscapedValue((_string = None) as String trn^, value)
+    _string = _pushEscapedValue((_string = None) as String iso^, value)
 
     /* Advance the pointer. */
     state.skip(codeLength)
     this._scanNonBlank(state)
 
-  fun _checkEscapeChar(char: U8, s: String trn): (ScanError | (USize, String trn^)) =>
+  fun _checkEscapeChar(char: U8, s: String iso): (ScanError | (USize, String iso^)) =>
     var codeLength : USize = 0
     match char
     | '0' => s.push('\0')
@@ -161,7 +161,7 @@ class _FlowScalarScanner is _Scanner
     end
     (codeLength, consume s)
 
-  fun _pushEscapedValue(s: String trn, value: U32): String trn^ =>
+  fun _pushEscapedValue(s: String iso, value: U32): String iso^ =>
     if (value <= 0x7F) then
       s.push(value.u8())
     elseif (value <= 0x7FF) then
@@ -188,10 +188,10 @@ class _FlowScalarScanner is _Scanner
     while state.isBlank() or state.isBreak() do
       if state.isBlank() then
         /* Consume a space or a tab character. */
-        if not (_scalarBlanks as _ScalarBlanks trn).leadingBlank then
-          match state.read(((_scalarBlanks as _ScalarBlanks trn).whitespaces = None) as String trn^)
+        if not (_scalarBlanks as _ScalarBlanks iso).leadingBlank then
+          match state.read(((_scalarBlanks as _ScalarBlanks iso).whitespaces = None) as String iso^)
           | let e: ScanError => return e
-          | let s: String trn => (_scalarBlanks as _ScalarBlanks trn).whitespaces = consume s
+          | let s: String iso => (_scalarBlanks as _ScalarBlanks iso).whitespaces = consume s
           else
             error
           end
@@ -199,7 +199,7 @@ class _FlowScalarScanner is _Scanner
           state.skip()
         end
       else
-        let s: _FirstLineBreakScanner = _FirstLineBreakScanner.create((_scalarBlanks = None) as _ScalarBlanks trn^, this~_endFirstLineBreak())
+        let s: _FirstLineBreakScanner = _FirstLineBreakScanner.create((_scalarBlanks = None) as _ScalarBlanks iso^, this~_endFirstLineBreak())
         _firstLineBreakScanner = s
         return s.apply(state)
       end
@@ -208,26 +208,26 @@ class _FlowScalarScanner is _Scanner
       end
     end
     /* Join the whitespaces or fold line breaks. */
-    if (_scalarBlanks as _ScalarBlanks trn).leadingBlank then
+    if (_scalarBlanks as _ScalarBlanks iso).leadingBlank then
       /* Do we need to fold line breaks? */
-      if (((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).size() > 0)
-         and (((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn)(0) == '\n') then
-        if ((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).size() == 0 then
-          (_string as String trn).push(' ')
+      if (((_scalarBlanks as _ScalarBlanks iso).leadingBreak as String iso).size() > 0)
+         and (((_scalarBlanks as _ScalarBlanks iso).leadingBreak as String iso)(0) == '\n') then
+        if ((_scalarBlanks as _ScalarBlanks iso).trailingBreaks as String iso).size() == 0 then
+          (_string as String iso).push(' ')
         else
-          (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clone())
-          ((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clear()
+          (_string as String iso).append(((_scalarBlanks as _ScalarBlanks iso).trailingBreaks as String iso).clone())
+          ((_scalarBlanks as _ScalarBlanks iso).trailingBreaks as String iso).clear()
         end
-        ((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).clear()
+        ((_scalarBlanks as _ScalarBlanks iso).leadingBreak as String iso).clear()
       else
-        (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).clone())
-        (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clone())
-        ((_scalarBlanks as _ScalarBlanks trn).leadingBreak as String trn).clear()
-        ((_scalarBlanks as _ScalarBlanks trn).trailingBreaks as String trn).clear()
+        (_string as String iso).append(((_scalarBlanks as _ScalarBlanks iso).leadingBreak as String iso).clone())
+        (_string as String iso).append(((_scalarBlanks as _ScalarBlanks iso).trailingBreaks as String iso).clone())
+        ((_scalarBlanks as _ScalarBlanks iso).leadingBreak as String iso).clear()
+        ((_scalarBlanks as _ScalarBlanks iso).trailingBreaks as String iso).clear()
       end
     else
-      (_string as String trn).append(((_scalarBlanks as _ScalarBlanks trn).whitespaces as String trn).clone())
-      ((_scalarBlanks as _ScalarBlanks trn).whitespaces as String trn).clear()
+      (_string as String iso).append(((_scalarBlanks as _ScalarBlanks iso).whitespaces as String iso).clone())
+      ((_scalarBlanks as _ScalarBlanks iso).whitespaces as String iso).clear()
     end
 
   fun ref _endFirstLineBreak(state: _ScannerState): _ScanResult ? =>
@@ -240,6 +240,6 @@ class _FlowScalarScanner is _Scanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create a token. */
-    state.emitToken(_YamlScalarToken(_startMark, endMark, (_string = None) as String trn^,
+    state.emitToken(_YamlScalarToken(_startMark, endMark, (_string = None) as String iso^,
         if _single then _YamlSingleQuotedScalarStyle else _YamlDoubleQuotedScalarStyle end))
     _nextScanner.apply(state)

@@ -4,7 +4,7 @@ class _BlockScalarScanner is _Scanner
   let _startMark: YamlMark val
   let _endMark: Option[YamlMark val] = Option[YamlMark val].none()
   let _nextScanner: _Scanner
-  var _string: (None | String trn) = recover String.create() end
+  var _string: (None | String iso) = recover String.create() end
   let _scalarBlanks: _ScalarBlanks = _ScalarBlanks.create()
   var _chompLeading: Bool = false
   var _chompTrailing: Bool = true
@@ -87,7 +87,7 @@ class _BlockScalarScanner is _Scanner
       _indent = if state.indent >= 0 then state.indent + _increment.usize() else _increment.usize() end
     end
     /* Scan the leading line breaks and determine the indentation level if needed. */
-    let s = _BlockScalarBreaksScanner.create(_indent, (_scalarBlanks.trailingBreaks = None) as String trn^, _startMark,
+    let s = _BlockScalarBreaksScanner.create(_indent, (_scalarBlanks.trailingBreaks = None) as String iso^, _startMark,
               _endMark.value(), this~_endBlockScalarBreaks())
     _blockScalarBreaksScanner = s
     s.apply(state)
@@ -110,33 +110,33 @@ class _BlockScalarScanner is _Scanner
       /* Is it a trailing whitespace? */
       _scalarBlanks.trailingBlank = state.isBlank()
       /* Check if we need to fold the leading line break. */
-      if not _literal and ((_scalarBlanks.leadingBreak as String trn).size() > 0)
+      if not _literal and ((_scalarBlanks.leadingBreak as String iso).size() > 0)
           and not _scalarBlanks.leadingBlank and not _scalarBlanks.trailingBlank then
         /* Do we need to join the lines by space? */
-        if (_scalarBlanks.trailingBreaks as String trn).size() == 0 then
-          (_string as String trn).push(' ')
+        if (_scalarBlanks.trailingBreaks as String iso).size() == 0 then
+          (_string as String iso).push(' ')
         end
-        (_scalarBlanks.leadingBreak as String trn).clear()
+        (_scalarBlanks.leadingBreak as String iso).clear()
       else
-        (_string as String trn).append((_scalarBlanks.leadingBreak as String trn).clone())
-        (_scalarBlanks.leadingBreak as String trn).clear()
+        (_string as String iso).append((_scalarBlanks.leadingBreak as String iso).clone())
+        (_scalarBlanks.leadingBreak as String iso).clear()
       end
       /* Append the remaining line breaks. */
-      (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
-      (_scalarBlanks.trailingBreaks as String trn).clear()
+      (_string as String iso).append((_scalarBlanks.trailingBreaks as String iso).clone())
+      (_scalarBlanks.trailingBreaks as String iso).clear()
       /* Is it a leading whitespace? */
       _scalarBlanks.leadingBlank = state.isBlank()
       return this._scanCurrentLine(state)
     end
     /* Chomp the tail. */
     if not _chompLeading then
-      (_string as String trn).append((_scalarBlanks.leadingBreak as String trn).clone())
+      (_string as String iso).append((_scalarBlanks.leadingBreak as String iso).clone())
     end
     if not _chompTrailing then
-      (_string as String trn).append((_scalarBlanks.trailingBreaks as String trn).clone())
+      (_string as String iso).append((_scalarBlanks.trailingBreaks as String iso).clone())
     end
     /* Create a token. */
-    state.emitToken(_YamlScalarToken(_startMark, _endMark.value(), (_string = None) as String trn^,
+    state.emitToken(_YamlScalarToken(_startMark, _endMark.value(), (_string = None) as String iso^,
       if _literal then _YamlLiteralScalarStyle else _YamlFoldedScalarStyle end))
     _nextScanner.apply(state)
 
@@ -144,9 +144,9 @@ class _BlockScalarScanner is _Scanner
   /* Consume the current line. */
   fun ref _scanCurrentLine(state: _ScannerState): _ScanResult ? =>
     while not state.isBreakZ() do
-      match state.read((_string = None) as String trn^)
+      match state.read((_string = None) as String iso^)
       | let e: ScanError => return e
-      | let s: String trn => _string = consume s
+      | let s: String iso => _string = consume s
       else
         error
       end
@@ -162,14 +162,14 @@ class _BlockScalarScanner is _Scanner
     if not state.available(2) then
       return ScanPaused(this~_readLine())
     end
-    match state.readLine((_scalarBlanks.leadingBreak = None) as String trn^)
+    match state.readLine((_scalarBlanks.leadingBreak = None) as String iso^)
     | let e: ScanError => return e
-    | let s: String trn => _scalarBlanks.leadingBreak = consume s
+    | let s: String iso => _scalarBlanks.leadingBreak = consume s
     else
       error
     end
     /* Eat the following intendation spaces and line breaks. */
-    let s = _BlockScalarBreaksScanner.create(_indent, (_scalarBlanks.trailingBreaks = None) as String trn^, _startMark,
+    let s = _BlockScalarBreaksScanner.create(_indent, (_scalarBlanks.trailingBreaks = None) as String iso^, _startMark,
               _endMark.value(), this~_endBlockScalarBreaks())
     _blockScalarBreaksScanner = s
     s.apply(state)
