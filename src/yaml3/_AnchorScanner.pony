@@ -42,5 +42,7 @@ class _AnchorScanner is _Scanner
     end
     let endMark = state.mark.clone()
     /* Create a token. */
-    state.emitToken(_tokenConstructor(_startMark, endMark, (_anchor = None) as String iso^))
+    match state.emitToken(_tokenConstructor(_startMark, endMark, (_anchor = None) as String iso^))
+    | let e: ScanError => return e
+    end
     _nextScanner.apply(state)

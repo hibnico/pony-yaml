@@ -1,6 +1,4 @@
 
-// let MAX_NUMBER_LENGTH: USize = 256
-
 class Option[T]
   var _value : (None | T)
   new none() => _value = None
@@ -34,14 +32,23 @@ interface _Scanner
 
 class _YamlSimpleKey
   /** Is a simple key possible? */
-  var possible: Bool = false
+  var possible: Bool
   /** Is a simple key required? */
-  var required: Bool = false
+  var required: Bool
   /** The number of the token. */
-  var token_number: USize = 0
+  var tokenNumber: USize
   /** The position mark. */
-  var mark: YamlMark = YamlMark.create()
-
+  var mark: YamlMark val
+  new createStub() =>
+    possible = false
+    required = false
+    tokenNumber = 0
+    mark = recover val YamlMark.create() end
+  new create(possible': Bool, required': Bool, tokenNumber': USize, mark': YamlMark val ) =>
+    possible = possible'
+    required = required'
+    tokenNumber = tokenNumber'
+    mark = mark'
 
 class YamlMark
   /** The position index. */

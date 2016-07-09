@@ -26,7 +26,7 @@ class _VersionDirectiveNumberScanner is _Scanner
     while state.isDigit() do
       /* Check if the number is too long. */
       length = length + 1
-      if length > MAX_NUMBER_LENGTH then
+      if length > 256 then
         return ScanError("while scanning a %YAML directive", _startMark, "found extremely long version number")
       end
       value = (value * 10) + state.asDigit().u16()

@@ -136,8 +136,10 @@ class _BlockScalarScanner is _Scanner
       (_string as String iso).append((_scalarBlanks.trailingBreaks as String iso).clone())
     end
     /* Create a token. */
-    state.emitToken(_YamlScalarToken(_startMark, _endMark.value(), (_string = None) as String iso^,
+    match state.emitToken(_YamlScalarToken(_startMark, _endMark.value(), (_string = None) as String iso^,
       if _literal then _YamlLiteralScalarStyle else _YamlFoldedScalarStyle end))
+    | let e: ScanError => return e
+    end
     _nextScanner.apply(state)
 
 

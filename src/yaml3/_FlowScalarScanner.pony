@@ -240,6 +240,8 @@ class _FlowScalarScanner is _Scanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create a token. */
-    state.emitToken(_YamlScalarToken(_startMark, endMark, (_string = None) as String iso^,
+    match state.emitToken(_YamlScalarToken(_startMark, endMark, (_string = None) as String iso^,
         if _single then _YamlSingleQuotedScalarStyle else _YamlDoubleQuotedScalarStyle end))
+    | let e: ScanError => return e
+    end
     _nextScanner.apply(state)

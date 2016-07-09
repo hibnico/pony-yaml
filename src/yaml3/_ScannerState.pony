@@ -8,7 +8,10 @@ class _ScannerState
   var flowLevel: USize = 0
   var indent: USize = 0
   let indents: Array[USize] = Array[USize].create(5)
-  var simpleKeys: Array[_YamlSimpleKey] = Array[_YamlSimpleKey].create(5)
+  let simpleKeys: Array[_YamlSimpleKey] ref = Array[_YamlSimpleKey].create(5)
+  var tokensParsed: USize = 0
+  let _tokenBuffer: Array[_YAMLToken] ref = Array[_YAMLToken].create(5)
+
 
   fun ref run(): (ScanDone | ScanPaused | ScanError) ? =>
     match _scanner.apply(this)
@@ -19,8 +22,48 @@ class _ScannerState
       error
     end
 
-  fun emitToken(token: _YAMLToken) =>
+  fun ref emitToken(token: _YAMLToken, offset: USize = 0): (ScanError | None) ? =>
+    let hasPossibleSimpleKeys: Bool = match _removeStaleSimpleKeys()
+    | let e: ScanError => return e
+    | let b: Bool => b
+    else
+      error
+    end
+    if hasPossibleSimpleKeys then
+      _tokenBuffer.insert(_tokenBuffer.size() - offset, token)
+    elseif offset != 0 then
+      error
+    else
+      if _tokenBuffer.size() > 0 then
+        for t in _tokenBuffer.values() do
+          _doEmitToken(t)
+        end
+        _tokenBuffer.truncate(0)
+      end
+      _doEmitToken(token)
+    end
+    tokensParsed = tokensParsed + 1
     None
+
+  fun _doEmitToken(token: _YAMLToken) =>
+    None
+
+  /*
+   * Increase the flow level and resize the simple key list if needed.
+   */
+  fun ref increaseFlowLevel() =>
+    /* Reset the simple key on the next level. */
+    simpleKeys.push(_YamlSimpleKey.createStub())
+    flowLevel = flowLevel + 1
+
+  /*
+   * Decrease the flow level.
+   */
+  fun ref decreaseFlowLevel() ? =>
+    if flowLevel > 0 then
+      flowLevel = flowLevel - 1
+      simpleKeys.pop()
+    end
 
   /*
    * Push the current indentation level to the stack and set the new level
@@ -29,7 +72,7 @@ class _ScannerState
    *
    */
   fun ref rollIndent(column: USize, tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val,
-                  m: YamlMark val, number: (U16 | None) = None) ? =>
+                  m: YamlMark val, number: (USize | None) = None) ? =>
     /* In the flow context, do nothing. */
     if flowLevel > 0 then
       return
@@ -43,11 +86,12 @@ class _ScannerState
       indents.push(indent)
       indent = column
       /* Create a token and insert it into the queue. */
-      emitToken(tokenConstructor(m, m))
-      if number is None then
-        tokens.enqueue(token)
+      let token = tokenConstructor(m, m)
+      match number
+      | None => emitToken(token)
+      | let n: USize => emitToken(token, tokensParsed - n)
       else
-        tokens.insert((number as U16) - tokens_parsed, token)
+        error
       end
     end
 
@@ -62,14 +106,96 @@ class _ScannerState
       return
     end
 
+    let limit = match column
+    | None => -1
+    | let c: USize => c
+    else
+      error
+    end
+
     /* Loop through the intendation levels in the stack. */
-    while indent > column do
+    while indent > limit do
       /* Create a token and append it to the queue. */
       let m = mark.clone()
       emitToken(_YamlBlockEndToken(m, m))
       /* Pop the indentation level. */
       indent = indents.pop()
     end
+
+  /*
+   * Check if a simple key may start at the current position and add it if
+   * needed.
+   */
+  fun ref saveSimpleKey(): (ScanError | None) ? =>
+    /*
+     * If the current position may start a simple key, save it.
+     */
+    if simpleKeyAllowed then
+      /* check if a simple key was already set */
+      let simpleKey = simpleKeys(simpleKeys.size() - 1)
+      if simpleKey.possible then
+        /* If the key is required, it is an error. */
+        if simpleKey.required then
+          return ScanError("while scanning a simple key", simpleKey.mark, "could not find expected ':'")
+        end
+      end
+      /* set the new simple key */
+      simpleKey.possible = true
+      /*
+       * A simple key is required at the current position if the scanner is in
+       * the block context and the current column coincides with the indentation
+       * level.
+       */
+      simpleKey.required = (flowLevel == 0) and (indent == mark.column)
+      simpleKey.tokenNumber = tokensParsed
+      simpleKey.mark = mark.clone()
+    end
+    None
+
+  /*
+   * Remove a potential simple key at the current flow level.
+   */
+  fun ref resetSimpleKey(): (ScanError | None) ? =>
+    let simpleKey = simpleKeys(simpleKeys.size() - 1)
+    if simpleKey.possible then
+      /* If the key is required, it is an error. */
+      if simpleKey.required then
+        return ScanError("while scanning a simple key", simpleKey.mark, "could not find expected ':'")
+      end
+    end
+    /* Remove the key from the stack. */
+    simpleKey.possible = false
+    None
+
+  /*
+   * Check the list of potential simple keys and remove the positions that
+   * cannot contain simple keys anymore.
+   */
+  fun ref _removeStaleSimpleKeys(): (ScanError | Bool) ? =>
+    var hasPossibleSimpleKeys: Bool = false
+    /* Check for a potential simple key for each flow level. */
+    for simpleKey in simpleKeys.values() do
+      /*
+       * The specification requires that a simple key
+       *
+       *  - is limited to a single line,
+       *  - is shorter than 1024 characters.
+       */
+      if simpleKey.possible then
+        if (simpleKey.mark.line < mark.line) or ((simpleKey.mark.index + 1024) < mark.index) then
+          /* Check if the potential simple key to be removed is required. */
+          if simpleKey.required then
+              return ScanError("while scanning a simple key", simpleKey.mark, "could not find expected ':'")
+          end
+          simpleKey.possible = false
+        else
+          hasPossibleSimpleKeys = true
+        end
+      end
+    end
+    /* Check the indentation level against the current column. */
+    unrollIndent(mark.column)
+    hasPossibleSimpleKeys
 
   fun available(nb: USize = 1): Bool =>
     (_data.size() - _pos) >= nb

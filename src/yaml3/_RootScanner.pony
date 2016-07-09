@@ -6,21 +6,27 @@ class _RootScanner
     if not state.available() then
       return ScanPaused(this)
     end
-    _streamStart(state)
+    match _streamStart(state)
+    | let e: ScanError => return e
+    | None => None
+    else
+      error
+    end
     this._scanToNextToken(state)
 
-  fun ref _streamStart(state: _ScannerState) =>
-    let simpleKey = _YamlSimpleKey.create()
+  fun ref _streamStart(state: _ScannerState): (ScanError | None) ? =>
     /* Set the initial indentation. */
     state.indent = -1
     /* Initialize the simple key stack. */
-    state.simpleKeys.push(simpleKey)
+    state.simpleKeys.push(_YamlSimpleKey.createStub())
     /* A simple key is allowed at the beginning of the stream. */
     state.simpleKeyAllowed = true
     /* Create the STREAM-START token and append it to the queue. */
     let mark = state.mark.clone()
     let encoding: String = "UTF-8" // TODO
-    state.emitToken(_YamlStreamStartToken(mark, mark, encoding))
+    match state.emitToken(_YamlStreamStartToken(mark, mark, encoding))
+    | let e: ScanError => e
+    end
 
   /*
    * Eat whitespaces and comments until the next token is found.
@@ -74,7 +80,7 @@ class _RootScanner
     if state.isBreak() then
       this._scanToNextToken_skipLineBreak(state)
     else
-      this._scanStaleSimpleKeys(state)
+      this._scanToken(state)
     end
 
   fun ref _scanToNextToken_skipLineBreak(state: _ScannerState): _ScanResult ? =>
@@ -87,33 +93,6 @@ class _RootScanner
       state.simpleKeyAllowed = true
     end
     this._scanToNextToken(state)
-
-  /*
-   * Check the list of potential simple keys and remove the positions that
-   * cannot contain simple keys anymore.
-   */
-  fun ref _scanStaleSimpleKeys(state: _ScannerState): _ScanResult ? =>
-    /* Check for a potential simple key for each flow level. */
-    for simpleKey in state.simpleKeys do
-      /*
-       * The specification requires that a simple key
-       *
-       *  - is limited to a single line,
-       *  - is shorter than 1024 characters.
-       */
-      if simpleKey.possible
-              and ((simpleKey.mark.line < state.mark.line)
-                  or ((simpleKey.mark.index + 1024) < state.mark.index)) then
-          /* Check if the potential simple key to be removed is required. */
-          if simpleKey.required then
-              return ScanError("while scanning a simple key", simpleKey.mark, "could not find expected ':'")
-          end
-          simpleKey.possible = false
-      end
-    end
-    /* Check the indentation level against the current column. */
-    state.unrollIndent(state.mark.column)
-    this._scanToken(state)
 
   fun ref _scanToken(state: _ScannerState): _ScanResult ? =>
     /*
@@ -287,13 +266,15 @@ class _RootScanner
     /* Reset the indentation level. */
     state.unrollIndent(state.mark.column)
     /* Reset simple keys. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     state.simpleKeyAllowed = false
     /* Create the STREAM-END token and append it to the queue. */
     let mark = state.mark.clone()
-    state.emitToken(_YamlStreamEndToken(mark, mark))
+    match state.emitToken(_YamlStreamEndToken(mark, mark))
+    | let e: ScanError => return e
+    end
     ScanDone
 
   /*
@@ -303,7 +284,7 @@ class _RootScanner
     /* Reset the indentation level. */
     state.unrollIndent(state.mark.column)
     /* Reset simple keys. */
-    match _removeSimpleKey()
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     state.simpleKeyAllowed = false
@@ -318,7 +299,7 @@ class _RootScanner
     /* Reset the indentation level. */
     state.unrollIndent(state.mark.column)
     /* Reset simple keys. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     state.simpleKeyAllowed = false
@@ -327,7 +308,9 @@ class _RootScanner
     state.skip(3)
     let endMark = state.mark.clone()
     /* Create the DOCUMENT-START or DOCUMENT-END token. */
-    state.emitToken(tokenConstructor(startMark, endMark))
+    match state.emitToken(tokenConstructor(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
@@ -335,11 +318,11 @@ class _RootScanner
    */
   fun ref _scanFlowCollectionStart(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val, state: _ScannerState): _ScanResult ? =>
     /* The indicators '[' and '{' may start a simple key. */
-    match _saveSimpleKey(state)
+    match state.saveSimpleKey()
     | let e: ScanError => return e
     end
     /* Increase the flow level. */
-    _increaseFlowLevel(state)
+    state.increaseFlowLevel()
     /* A simple key may follow the indicators '[' and '{'. */
     state.simpleKeyAllowed = true
     /* Consume the token. */
@@ -347,7 +330,9 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the FLOW-SEQUENCE-START of FLOW-MAPPING-START token. */
-    state.emitToken(tokenConstructor(startMark, endMark))
+    match state.emitToken(tokenConstructor(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
@@ -355,11 +340,11 @@ class _RootScanner
    */
   fun ref _scanFlowCollectionEnd(tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val, state: _ScannerState): _ScanResult ? =>
     /* Reset any potential simple key on the current flow level. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     /* Decrease the flow level. */
-    _decreaseFlowLevel(state)
+    state.decreaseFlowLevel()
     /* No simple keys after the indicators ']' and '}'. */
     state.simpleKeyAllowed = false
     /* Consume the token. */
@@ -367,7 +352,9 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the FLOW-SEQUENCE-END of FLOW-MAPPING-END token. */
-    state.emitToken(tokenConstructor(startMark, endMark))
+    match state.emitToken(tokenConstructor(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
@@ -375,7 +362,7 @@ class _RootScanner
    */
   fun ref _scanFlowEntry(state: _ScannerState): _ScanResult ? =>
     /* Reset any potential simple keys on the current flow level. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     /* Simple keys are allowed after ','. */
@@ -385,7 +372,9 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the FLOW-ENTRY token and append it to the queue. */
-    state.emitToken(_YamlFlowEntryToken(startMark, endMark))
+    match state.emitToken(_YamlFlowEntryToken(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
@@ -410,7 +399,7 @@ class _RootScanner
       None
     end
     /* Reset any potential simple keys on the current flow level. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     /* Simple keys are allowed after '-'. */
@@ -420,7 +409,9 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the BLOCK-ENTRY token and append it to the queue. */
-    state.emitToken(_YamlBlockEntryToken(startMark, endMark))
+    match state.emitToken(_YamlBlockEntryToken(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
@@ -438,7 +429,7 @@ class _RootScanner
       state.rollIndent(state.mark.column, cons, state.mark.clone())
     end
     /* Reset any potential simple keys on the current flow level. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     /* Simple keys are allowed after '?' in the block context. */
@@ -448,31 +439,35 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the KEY token and append it to the queue. */
-    state.emitToken(_YamlKeyToken(startMark, endMark))
+    match state.emitToken(_YamlKeyToken(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
    * Produce the VALUE token.
    */
   fun ref _scanValue(state: _ScannerState): _ScanResult ? =>
-    let simpleKey = state.simpleKeys.top-1
+    let simpleKey = state.simpleKeys(state.simpleKeys.size() - 1)
     /* Have we found a simple key? */
     if simpleKey.possible then
       /* Create the KEY token and insert it into the queue. */
-      state.emitToken(_YamlKeyToken(simpleKey.mark, simpleKey.mark))
+      match state.emitToken(_YamlKeyToken(simpleKey.mark, simpleKey.mark), state.tokensParsed - simpleKey.tokenNumber)
+      | let e: ScanError => return e
+      end
       /* In the block context, we may need to add the BLOCK-MAPPING-START token. */
       let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlBlockMappingStartToken.create(startMark, endMark) end
       state.rollIndent(simpleKey.mark.column, cons, simpleKey.mark, simpleKey.tokenNumber)
       /* Remove the simple key. */
       simpleKey.possible = false
       /* A simple key cannot follow another simple key. */
-      simpleKey = false
+      state.simpleKeyAllowed = false
     else
       /* The ':' indicator follows a complex key. */
       /* In the block context, extra checks are required. */
       if state.flowLevel == 0 then
         /* Check if we are allowed to start a complex value. */
-        if not simpleKey then
+        if not state.simpleKeyAllowed then
           return ScanError(None, state.mark.clone(), "mapping values are not allowed in this context")
         end
         /* Add the BLOCK-MAPPING-START token if needed. */
@@ -487,7 +482,9 @@ class _RootScanner
     state.skip()
     let endMark = state.mark.clone()
     /* Create the VALUE token and append it to the queue. */
-    state.emitToken(_YamlValueToken(startMark, endMark))
+    match state.emitToken(_YamlValueToken(startMark, endMark))
+    | let e: ScanError => return e
+    end
     this._scanToNextToken(state)
 
   /*
@@ -496,7 +493,7 @@ class _RootScanner
   fun ref _scanAnchor(tokenConstructor: {(YamlMark val, YamlMark val, String val): _YAMLToken} val, errorName: String,
         state: _ScannerState): _ScanResult ? =>
     /* An anchor or an alias could be a simple key. */
-    match _saveSimpleKey(state)
+    match state.saveSimpleKey()
     | let e: ScanError => return e
     end
     /* A simple key cannot follow an anchor or an alias. */
@@ -510,7 +507,7 @@ class _RootScanner
    */
   fun ref _scanTag(state: _ScannerState): _ScanResult ? =>
     /* A tag could be a simple key. */
-    match _saveSimpleKey(state)
+    match state.saveSimpleKey()
     | let e: ScanError => return e
     end
     /* A simple key cannot follow a tag. */
@@ -524,7 +521,7 @@ class _RootScanner
    */
   fun ref _scanBlockScalar(literal: Bool, state: _ScannerState): _ScanResult ? =>
     /* Remove any potential simple keys. */
-    match _removeSimpleKey(state)
+    match state.resetSimpleKey()
     | let e: ScanError => return e
     end
     /* A simple key may follow a block scalar. */
@@ -539,7 +536,7 @@ class _RootScanner
    */
   fun ref _scanFlowScalar(single: Bool, state: _ScannerState): _ScanResult ? =>
     /* A plain scalar could be a simple key. */
-    match _saveSimpleKey(state)
+    match state.saveSimpleKey()
     | let e: ScanError => return e
     end
     /* A simple key cannot follow a flow scalar. */
@@ -553,7 +550,7 @@ class _RootScanner
    */
   fun ref _scanPlainScalar(state: _ScannerState): _ScanResult ? =>
     /* A plain scalar could be a simple key. */
-    match _saveSimpleKey(state)
+    match state.saveSimpleKey()
     | let e: ScanError => return e
     end
     /* A simple key cannot follow a flow scalar. */
@@ -561,63 +558,3 @@ class _RootScanner
     /* Create the SCALAR token and append it to the queue. */
     let s = _PlainScalarScanner.create(state.mark.clone(), this~_scanToNextToken())
     s.apply(state)
-
-  /*
-   * Increase the flow level and resize the simple key list if needed.
-   */
-  fun _increaseFlowLevel(state: _ScannerState) =>
-    let simpleKey = _YamlSimpleKey.create()
-    /* Reset the simple key on the next level. */
-    state.simpleKeys.push(simpleKey)
-    state.flowLevel = state.flowLevel + 1
-
-  /*
-   * Decrease the flow level.
-   */
-  fun _decreaseFlowLevel(state: _ScannerState) ? =>
-    if state.flowLevel > 0 then
-      state.flowLevel = state.flowLevel - 1
-      state.simpleKeys.pop()
-    end
-
-  /*
-   * Check if a simple key may start at the current position and add it if
-   * needed.
-   */
-  fun _saveSimpleKey(state: _ScannerState): (ScanError | None) ? =>
-    /*
-     * A simple key is required at the current position if the scanner is in
-     * the block context and the current column coincides with the indentation
-     * level.
-     */
-    var required = (state.flowLevel == 0) and (state.indent == state.mark.column)
-    /*
-     * If the current position may start a simple key, save it.
-     */
-    if state.simpleKeyAllowed then
-      let simpleKey = _YamlSimpleKey.create()
-      simpleKey.possible = true
-      simpleKey.required = required
-      simpleKey.token_number = tokens_parsed + (tokens.tail - tokens.head)
-      simpleKey.mark = state.mark.clone()
-      match _removeSimpleKey(state)
-      | let e: ScanError => return e
-      end
-      state.simpleKeys.update(state.simpleKeys.size() - 1, simpleKey)
-    end
-    None
-
-  /*
-   * Remove a potential simple key at the current flow level.
-   */
-  fun _removeSimpleKey(state: _ScannerState): (ScanError | None) ? =>
-    let simpleKey = state.simpleKeys.top-1
-    if simpleKey.possible then
-      /* If the key is required, it is an error. */
-      if simpleKey.required then
-        return ScanError("while scanning a simple key", simpleKey.mark, "could not find expected ':'")
-      end
-    end
-    /* Remove the key from the stack. */
-    simpleKey.possible = false
-    None
