@@ -229,6 +229,7 @@ class _FlowScalarScanner is _Scanner
       (_string as String iso).append(((_scalarBlanks as _ScalarBlanks iso).whitespaces as String iso).clone())
       ((_scalarBlanks as _ScalarBlanks iso).whitespaces as String iso).clear()
     end
+    this._scanContent(state)
 
   fun ref _endFirstLineBreak(state: _ScannerState): _ScanResult ? =>
     let s: _FirstLineBreakScanner = _firstLineBreakScanner as _FirstLineBreakScanner

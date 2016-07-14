@@ -12,6 +12,8 @@ class _ScannerState
   var tokensParsed: USize = 0
   let _tokenBuffer: Array[_YAMLToken] ref = Array[_YAMLToken].create(5)
 
+  fun ref append(data: Array[U8] val) =>
+    _data.append(data)
 
   fun ref run(): (ScanDone | ScanPaused | ScanError) ? =>
     match _scanner.apply(this)

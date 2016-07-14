@@ -15,4 +15,5 @@ class iso _TestToken is UnitTest
   fun name():String => "token"
 
   fun apply(h: TestHelper) =>
-    h.assert_true(true)
+    let yamlParser = YamlParser.create()
+    yamlParser.onData("----".array())
