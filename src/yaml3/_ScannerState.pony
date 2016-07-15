@@ -25,7 +25,7 @@ class _ScannerState
     end
 
   fun ref emitToken(token: _YAMLToken, offset: USize = 0): (ScanError | None) ? =>
-    let hasPossibleSimpleKeys: Bool = match _removeStaleSimpleKeys()
+    let hasPossibleSimpleKeys: Bool = match removeStaleSimpleKeys()
     | let e: ScanError => return e
     | let b: Bool => b
     else
@@ -173,7 +173,7 @@ class _ScannerState
    * Check the list of potential simple keys and remove the positions that
    * cannot contain simple keys anymore.
    */
-  fun ref _removeStaleSimpleKeys(): (ScanError | Bool) ? =>
+  fun ref removeStaleSimpleKeys(): (ScanError | Bool) =>
     var hasPossibleSimpleKeys: Bool = false
     /* Check for a potential simple key for each flow level. */
     for simpleKey in simpleKeys.values() do
@@ -195,8 +195,6 @@ class _ScannerState
         end
       end
     end
-    /* Check the indentation level against the current column. */
-    unrollIndent(mark.column)
     hasPossibleSimpleKeys
 
   fun available(nb: USize = 1): Bool =>

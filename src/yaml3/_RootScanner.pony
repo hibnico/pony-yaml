@@ -80,7 +80,7 @@ class _RootScanner
     if state.isBreak() then
       this._scanToNextToken_skipLineBreak(state)
     else
-      this._scanToken(state)
+      this._scanToNextToken_staleKeys(state)
     end
 
   fun ref _scanToNextToken_skipLineBreak(state: _ScannerState): _ScanResult ? =>
@@ -93,6 +93,15 @@ class _RootScanner
       state.simpleKeyAllowed = true
     end
     this._scanToNextToken(state)
+
+  fun ref _scanToNextToken_staleKeys(state: _ScannerState): _ScanResult ? =>
+    /* Remove obsolete potential simple keys. */
+    match state.removeStaleSimpleKeys()
+    | let e: ScanError => return e
+    end
+    /* Check the indentation level against the current column. */
+    state.unrollIndent(state.mark.column)
+    this._scanToken(state)
 
   fun ref _scanToken(state: _ScannerState): _ScanResult ? =>
     /*
