@@ -78,7 +78,7 @@ class _TagScanner is _Scanner
     if not state.available() then
       return ScanPaused(this~_scanEnd())
     end
-    if not state.isBlankZ() then
+    if not state.isBlankEOF() then
       return ScanError("while scanning a tag", _startMark, "did not find expected whitespace or line break")
     end
     let endMark = state.mark.clone()

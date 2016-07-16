@@ -33,12 +33,12 @@ class _FlowScalarScanner is _Scanner
          (state.check('.', 0) and
           state.check('.', 1) and
           state.check('.', 2))) and
-        state.isBlankZ(3)) then
+        state.isBlankEOF(3)) then
       return ScanError("while scanning a quoted scalar", _startMark, "found unexpected document indicator")
     end
 
     /* Check for EOF. */
-    if state.isZ() then
+    if state.isEOF() then
       return ScanError("while scanning a quoted scalar", _startMark, "found unexpected end of stream")
     end
     (_scalarBlanks as _ScalarBlanks iso).leadingBlank = false
@@ -49,7 +49,7 @@ class _FlowScalarScanner is _Scanner
     if not state.available(2) then
       return ScanPaused(this~_scanNonBlank())
     end
-    while not state.isBlankZ() do
+    while not state.isBlankEOF() do
       /* Check for an escaped single quote. */
       if (_single and state.check('\'') and state.check('\'', 1)) then
         (_string as String iso).push('\'')

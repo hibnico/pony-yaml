@@ -42,7 +42,7 @@ class _TagDirectiveValueScanner is _Scanner
     if not state.available() then
       return ScanPaused(this~_scanWhitespaceOrLineBreak())
     end
-    if not state.isBlankZ() then
+    if not state.isBlankEOF() then
       return ScanError("while scanning a %TAG directive", _startMark, "did not find expected whitespace or line break")
     end
     let tagHandleScanner = _tagHandleScanner as _TagHandleScanner

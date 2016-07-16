@@ -1,9 +1,11 @@
 
 class _ScannerState
+  let _tokenEmitter: TokenEmitter
   var _scanner: _Scanner = _RootScanner.create()
   let mark: YamlMark = YamlMark.create()
   let _data: Array[U8] = Array[U8].create(1024)
   var _pos: USize = 0
+  var _eof_pos: USize = USize.max_value()
   var simpleKeyAllowed: Bool = true
   var flowLevel: USize = 0
   var indent: USize = 0
@@ -12,8 +14,15 @@ class _ScannerState
   var tokensParsed: USize = 0
   let _tokenBuffer: Array[_YAMLToken] ref = Array[_YAMLToken].create(5)
 
+  new create(tokenEmitter: TokenEmitter) =>
+    _tokenEmitter = tokenEmitter
+
   fun ref append(data: Array[U8] val) =>
-    _data.append(data)
+    if data.size() == 0 then
+      _eof_pos = _data.size()
+    else
+      _data.append(data)
+    end
 
   fun ref run(): (ScanDone | ScanPaused | ScanError) ? =>
     match _scanner.apply(this)
@@ -38,16 +47,13 @@ class _ScannerState
     else
       if _tokenBuffer.size() > 0 then
         for t in _tokenBuffer.values() do
-          _doEmitToken(t)
+          _tokenEmitter.emit(t)
         end
         _tokenBuffer.truncate(0)
       end
-      _doEmitToken(token)
+      _tokenEmitter.emit(token)
     end
     tokensParsed = tokensParsed + 1
-    None
-
-  fun _doEmitToken(token: _YAMLToken) =>
     None
 
   /*
@@ -198,7 +204,7 @@ class _ScannerState
     hasPossibleSimpleKeys
 
   fun available(nb: USize = 1): Bool =>
-    (_data.size() - _pos) >= nb
+    ((_data.size() - _pos) >= nb) and ((_eof_pos - _pos) >= nb)
 
   /*
    * Determine the width of the character.
@@ -381,8 +387,8 @@ class _ScannerState
   /*
    * Check if the character at the specified position is NUL.
    */
-  fun isZ(offset: USize = 0): Bool ? =>
-    _data(_pos + offset) == '\0'
+  fun isEOF(offset: USize = 0): Bool =>
+    (_pos + offset) == _eof_pos
 
   /*
    * Check if the character at the specified position is BOM.
@@ -431,17 +437,17 @@ class _ScannerState
   /*
    * Check if the character is a line break or NUL.
    */
-  fun isBreakZ(offset: USize = 0): Bool ? =>
-    isBreak(offset) or isZ(offset)
+  fun isBreakEOF(offset: USize = 0): Bool ? =>
+    isBreak(offset) or isEOF(offset)
 
   /*
    * Check if the character is a line break, space, or NUL.
    */
-  fun isSpaceZ(offset: USize = 0): Bool ? =>
-    isSpace(offset) or isBreakZ(offset)
+  fun isSpaceEOF(offset: USize = 0): Bool ? =>
+    isSpace(offset) or isBreakEOF(offset)
 
   /*
    * Check if the character is a line break, space, tab, or NUL.
    */
-  fun isBlankZ(offset: USize = 0): Bool ? =>
-    isBlank(offset) or isBreakZ(offset)
+  fun isBlankEOF(offset: USize = 0): Bool ? =>
+    isBlank(offset) or isBreakEOF(offset)

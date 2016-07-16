@@ -6,7 +6,7 @@ class _SkipLineScanner
     if not state.available() then
       return ScanPaused(this~scan(nextScanner))
     end
-    while not state.isBreakZ() do
+    while not state.isBreakEOF() do
       state.skip()
       if not state.available() then
         return ScanPaused(this~scan(nextScanner))

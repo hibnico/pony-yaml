@@ -9,7 +9,6 @@ class Option[T]
   fun value(): T ? => _value as T
 //  fun ref run(runner: {(T): T^}) ? => set(runner(giveup()))
 
-
 class ScanError
   let problem: (None | String)
   let mark: YamlMark val
@@ -50,7 +49,7 @@ class _YamlSimpleKey
     tokenNumber = tokenNumber'
     mark = mark'
 
-class YamlMark
+class YamlMark is Equatable[YamlMark box]
   /** The position index. */
   var index: USize
   /** The position line. */
@@ -63,8 +62,16 @@ class YamlMark
     line = line'
     column = column'
 
+  new val newval(index': USize = 0, line': USize = 0, column': USize = 0) =>
+    index = index'
+    line = line'
+    column = column'
+
   fun clone(): YamlMark val =>
     let i = index
     let l = line
     let c = column
     recover val YamlMark.create(i, l, c) end
+
+  fun eq(that: YamlMark box): Bool =>
+    (that.index == this.index) and (that.line == this.line) and (that.column == this.column)

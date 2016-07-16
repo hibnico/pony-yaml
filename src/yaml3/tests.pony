@@ -4,16 +4,41 @@ use "debug"
 actor Main is TestList
   new create(env: Env) =>
     PonyTest(env, this)
-
-  new make() =>
-    None
-
   fun tag tests(test: PonyTest) =>
-    test(_TestToken)
+    test(_TestSimple)
 
-class iso _TestToken is UnitTest
-  fun name():String => "token"
+actor _TokenCheckerCollector is TokenEmitter
+  let _expectedTokens: Array[_YAMLToken] val
+  let _h: TestHelper
+  var pos: USize = 0
+  new create(h: TestHelper, expectedTokens: Array[_YAMLToken] val) =>
+    _h = h
+    _expectedTokens = expectedTokens
+  be emit(token: _YAMLToken) =>
+    try
+      _h.assert_eq[_YAMLToken](token, _expectedTokens(pos))
+    end
+    Debug.out(token)
+    pos = pos + 1
+    if pos == _expectedTokens.size() then
+      _h.complete(true)
+    end
 
+class iso _TestSimple is UnitTest
+  fun name(): String => "simple"
   fun apply(h: TestHelper) =>
-    let yamlParser = YamlParser.create()
-    yamlParser.onData("----".array())
+    h.long_test(1000)
+    let expectedTokens: Array[_YAMLToken] val = recover val
+      let tokens: Array[_YAMLToken] = Array[_YAMLToken].create()
+      tokens.push(_YamlStreamStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(0, 0, 0), "UTF-8"))
+      tokens.push(_YamlDocumentStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(0, 0, 0)))
+      tokens.push(_YamlStreamEndToken.create(YamlMark.newval(3, 0, 3), YamlMark.newval(0, 0, 0)))
+      tokens
+    end
+    let collector = _TokenCheckerCollector.create(h, expectedTokens)
+    let state: _ScannerState = _ScannerState.create(collector)
+    state.append("key: value".array())
+    state.append(recover val Array[U8].create() end)
+    try
+      state.run()
+    end

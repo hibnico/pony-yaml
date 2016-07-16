@@ -103,7 +103,7 @@ class _BlockScalarScanner is _Scanner
     if not state.available() then
       return ScanPaused(this~_scanContent())
     end
-    if (state.mark.column == _indent) and not state.isZ() then
+    if (state.mark.column == _indent) and not state.isEOF() then
       /*
        * We are at the beginning of a non-empty line.
        */
@@ -145,7 +145,7 @@ class _BlockScalarScanner is _Scanner
 
   /* Consume the current line. */
   fun ref _scanCurrentLine(state: _ScannerState): _ScanResult ? =>
-    while not state.isBreakZ() do
+    while not state.isBreakEOF() do
       match state.read((_string = None) as String iso^)
       | let e: ScanError => return e
       | let s: String iso => _string = consume s

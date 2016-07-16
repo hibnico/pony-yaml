@@ -38,7 +38,7 @@ class _DirectiveNameScanner is _Scanner
     end
 
     /* Check for an blank character after the name. */
-    if not state.isBlankZ() then
+    if not state.isBlankEOF() then
       return ScanError("while scanning a directive", _startMark, "found unexpected non-alphabetical character")
     end
     _nextScanner.apply(state)

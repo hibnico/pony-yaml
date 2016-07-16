@@ -67,7 +67,7 @@ class _RootScanner
     end
 
   fun ref _scanToNextToken_skipComment(state: _ScannerState): _ScanResult ? =>
-    while not state.isBreakZ() do
+    while not state.isBreakEOF() do
       state.skip()
       if not state.available() then
         return ScanPaused(this~_scanToNextToken_skipComment())
@@ -113,7 +113,7 @@ class _RootScanner
     end
 
     /* Is it the end of the stream? */
-    if state.isZ() then
+    if state.isEOF() then
       return this._scanStreamEnd(state)
     end
 
@@ -127,7 +127,7 @@ class _RootScanner
             and state.check('-', 0)
             and state.check('-', 1)
             and state.check('-', 2)
-            and state.isBlankZ(3) then
+            and state.isBlankEOF(3) then
       let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlDocumentStartToken.create(startMark, endMark) end
       return this._scanDocumentIndicator(cons, state)
     end
@@ -137,7 +137,7 @@ class _RootScanner
             and state.check('.', 0)
             and state.check('.', 1)
             and state.check('.', 2)
-            and state.isBlankZ(3) then
+            and state.isBlankEOF(3) then
       let cons = lambda (startMark: YamlMark val, endMark: YamlMark val) : _YAMLToken => _YamlDocumentEndToken.create(startMark, endMark) end
       return this._scanDocumentIndicator(cons, state)
     end
@@ -172,17 +172,17 @@ class _RootScanner
     end
 
     /* Is it the block entry indicator? */
-    if state.check('-') and state.isBlankZ(1) then
+    if state.check('-') and state.isBlankEOF(1) then
       return this._scanBlockEntry(state)
     end
 
     /* Is it the key indicator? */
-    if state.check('?') and ((state.flowLevel > 0) or state.isBlankZ(1)) then
+    if state.check('?') and ((state.flowLevel > 0) or state.isBlankEOF(1)) then
       return this._scanKey(state)
     end
 
     /* Is it the value indicator? */
-    if state.check(':') and ((state.flowLevel > 0) or state.isBlankZ(1)) then
+    if state.check(':') and ((state.flowLevel > 0) or state.isBlankEOF(1)) then
       return this._scanValue(state)
     end
 
@@ -241,7 +241,7 @@ class _RootScanner
      *
      * The last rule is more restrictive than the specification requires.
      */
-    if not (state.isBlankZ() or state.check('-')
+    if not (state.isBlankEOF() or state.check('-')
                 or state.check('?') or state.check(':')
                 or state.check(',') or state.check('[')
                 or state.check(']') or state.check('{')
@@ -254,7 +254,7 @@ class _RootScanner
             (state.check('-') and not state.isBlank(1)) or
             (not (state.flowLevel > 0) and
              (state.check('?') or state.check(':'))
-             and not state.isBlankZ(1)) then
+             and not state.isBlankEOF(1)) then
       return this._scanPlainScalar(state)
     end
 

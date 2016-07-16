@@ -33,7 +33,7 @@ class _AnchorScanner is _Scanner
         return ScanPaused(this~_scanAnchor())
       end
     end
-    if ((_length == 0) or not (state.isBlankZ() or state.check('?')
+    if ((_length == 0) or not (state.isBlankEOF() or state.check('?')
                 or state.check(':') or state.check(',')
                 or state.check(']') or state.check('}')
                 or state.check('%') or state.check('@')

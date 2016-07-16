@@ -2,7 +2,7 @@
 class _EOLScanner
   fun ref scan(startMark: YamlMark val, errorContext: String, nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
     /* Check if we are at the end of the line. */
-    if not state.isBreakZ() then
+    if not state.isBreakEOF() then
       return ScanError(errorContext, startMark, "did not find expected comment or line break")
     end
 

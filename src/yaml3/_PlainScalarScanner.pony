@@ -32,7 +32,7 @@ class _PlainScalarScanner is _Scanner
          (state.check('.', 0) and
           state.check('.', 1) and
           state.check('.', 2))) and
-        state.isBlankZ(3)) then
+        state.isBlankEOF(3)) then
       return this._scanEnd(state)
     end
     /* Check for a comment. */
@@ -47,14 +47,14 @@ class _PlainScalarScanner is _Scanner
       return ScanPaused(this~_scanNonBlank())
     end
     /* Consume non-blank characters. */
-    while not state.isBlankZ() do
+    while not state.isBlankEOF() do
       /* Check for 'x:x' in the flow context. TODO: Fix the test "spec-08-13". */
-      if (state.flowLevel > 0) and state.check(':') and not state.isBlankZ(1) then
+      if (state.flowLevel > 0) and state.check(':') and not state.isBlankEOF(1) then
         return ScanError("while scanning a plain scalar", _startMark, "found unexpected ':'")
       end
 
       /* Check for indicators that may end a plain scalar. */
-      if ((state.check(':') and state.isBlankZ(1))
+      if ((state.check(':') and state.isBlankEOF(1))
               or ((state.flowLevel > 0) and
                   (state.check(',') or state.check(':')
                    or state.check('?') or state.check('[')
