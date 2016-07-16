@@ -16,7 +16,7 @@ class _PlainScalarScanner is _Scanner
     _endMark = _startMark
 
   fun ref apply(state: _ScannerState): _ScanResult ? =>
-    _indent = state.indent + 1
+    _indent = state.indent
     this._scanContent(state)
 
   /* Consume the content of the plain scalar. */

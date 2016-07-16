@@ -16,7 +16,7 @@ class _RootScanner
 
   fun ref _streamStart(state: _ScannerState): (ScanError | None) ? =>
     /* Set the initial indentation. */
-    state.indent = -1
+    state.indent = 0
     /* Initialize the simple key stack. */
     state.simpleKeys.push(_YamlSimpleKey.createStub())
     /* A simple key is allowed at the beginning of the stream. */

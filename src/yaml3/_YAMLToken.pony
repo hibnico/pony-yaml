@@ -15,7 +15,7 @@ class val _YamlNoToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("NoToken[")
@@ -50,7 +50,7 @@ class val _YamlStreamStartToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     let e = encoding
     recover
       let s: String ref = String.create()
@@ -84,7 +84,7 @@ class val _YamlStreamEndToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("StreamEnd[")
@@ -122,7 +122,7 @@ class val _YamlVersionDirectiveToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     let maj = major
     let min = minor
     recover
@@ -166,7 +166,7 @@ class val _YamlTagDirectiveToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     let h = handle
     let p = prefix
     recover
@@ -204,7 +204,7 @@ class val _YamlDocumentStartToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("DocumentStart[")
@@ -236,7 +236,7 @@ class val _YamlDocumentEndToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("DocumentEnd[")
@@ -268,7 +268,7 @@ class val _YamlBlockSequenceStartToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("BlockSequenceStart[")
@@ -300,7 +300,7 @@ class val _YamlBlockMappingStartToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("BlockMappingStart[")
@@ -332,7 +332,7 @@ class val _YamlBlockEndToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("BlockEnd[")
@@ -364,7 +364,7 @@ class val _YamlFlowSequenceStartToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("FlowSequenceStart[")
@@ -396,7 +396,7 @@ class val _YamlFlowSequenceEndToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("FlowSequenceEnd[")
@@ -428,7 +428,7 @@ class val _YamlFlowMappingStartToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("FlowMappingStart[")
@@ -460,7 +460,7 @@ class val _YamlFlowMappingEndToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("FlowMappingEnd[")
@@ -492,7 +492,7 @@ class val _YamlBlockEntryToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("BlockEntry[")
@@ -524,7 +524,7 @@ class val _YamlFlowEntryToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("FlowEntry[")
@@ -556,7 +556,7 @@ class val _YamlKeyToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("Key[")
@@ -588,7 +588,7 @@ class val _YamlValueToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("Value[")
@@ -623,7 +623,7 @@ class val _YamlAliasToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     let v = value
     recover
       let s: String ref = String.create()
@@ -661,7 +661,7 @@ class val _YamlAnchorToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     let v = value
     recover
       let s: String ref = String.create()
@@ -701,7 +701,7 @@ class val _YamlTagToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     let h = handle
     let suf = suffix
     recover
@@ -752,7 +752,7 @@ class val _YamlScalarToken is _YAMLToken
 
   fun string(fmt: FormatSettings = FormatSettingsDefault): String iso^ =>
     let startIndex = startMark.index
-    let endIndex = startMark.index
+    let endIndex = endMark.index
     recover
       let s: String ref = String.create()
       s.append("Scalar[")

@@ -21,6 +21,11 @@ class _ScannerState
     if data.size() == 0 then
       _eof_pos = _data.size()
     else
+      // use the opportunity to reclaim some ununsed space
+      if _pos != 0 then
+        _data.copy_to(_data, _pos, 0, _data.size() - _pos)
+        _pos = 0
+      end
       _data.append(data)
     end
 
@@ -86,7 +91,7 @@ class _ScannerState
       return
     end
 
-    if indent < column then
+    if indent <= column then
       /*
        * Push the current indentation level to the stack and set the new
        * indentation level.
@@ -114,8 +119,8 @@ class _ScannerState
       return
     end
 
-    let limit = match column
-    | None => -1
+    let limit: USize = match column
+    | None => 0
     | let c: USize => c
     else
       error
