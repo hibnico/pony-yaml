@@ -47,12 +47,7 @@ class _BlockScalarBreaksScanner is _Scanner
     if not state.available(2) then
       return ScanPaused(this~_scanLineBreak())
     end
-    match state.read((breaks = None) as String iso^)
-    | let b: String iso => breaks = consume b
-    | let e: ScanError => return e
-    else
-      error
-    end
+    breaks = state.read((breaks = None) as String iso^)
     this.apply(state)
 
   fun ref _scanEnd(state: _ScannerState): _ScanResult ? =>

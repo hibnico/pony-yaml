@@ -23,8 +23,7 @@ class _RootScanner
     state.simpleKeyAllowed = true
     /* Create the STREAM-START token and append it to the queue. */
     let mark = state.mark.clone()
-    let encoding: String = "UTF-8" // TODO
-    match state.emitToken(_YamlStreamStartToken(mark, mark, encoding))
+    match state.emitToken(_YamlStreamStartToken(mark, mark, state.encoding))
     | let e: ScanError => e
     end
 

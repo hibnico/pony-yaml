@@ -23,10 +23,7 @@ class _DirectiveNameScanner is _Scanner
     end
 
     while state.isAlpha() do
-      match state.read((name = None) as String iso^)
-      | let s: String iso => name = consume s
-      | let e: ScanError => return e
-      end
+      name = state.read((name = None) as String iso^)
       if not state.available() then
         return ScanPaused(this)
       end

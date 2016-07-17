@@ -88,12 +88,7 @@ class _PlainScalarScanner is _Scanner
         end
       end
       /* Copy the character. */
-      match state.read((_string = None) as String iso^)
-      | let e: ScanError => return e
-      | let s: String iso => _string = consume s
-      else
-        error
-      end
+      _string = state.read((_string = None) as String iso^)
       _endMark = state.mark.clone()
       if not state.available(2) then
         return ScanPaused(this~_scanNonBlank())
@@ -118,12 +113,7 @@ class _PlainScalarScanner is _Scanner
         end
         /* Consume a space or a tab character. */
         if not _scalarBlanks.leadingBlank then
-          match state.read((_scalarBlanks.whitespaces = None) as String iso^)
-          | let e: ScanError => return e
-          | let s: String iso => _scalarBlanks.whitespaces = consume s
-          else
-            error
-          end
+          _scalarBlanks.whitespaces = state.read((_scalarBlanks.whitespaces = None) as String iso^)
         else
           state.skip()
         end

@@ -41,9 +41,9 @@ class val _YamlStreamStartToken is _YAMLToken
   /** The end of the token. */
   let endMark: YamlMark val
   /** The stream encoding. */
-  let encoding: String
+  let encoding: Encoding
 
-  new val create(startMark': YamlMark val, endMark': YamlMark val, encoding': String) =>
+  new val create(startMark': YamlMark val, endMark': YamlMark val, encoding': Encoding) =>
     startMark = startMark'
     endMark = endMark'
     encoding = encoding'
@@ -59,14 +59,14 @@ class val _YamlStreamStartToken is _YAMLToken
       s.append("..")
       s.append(endIndex.string())
       s.append("] enc=")
-      s.append(e)
+      s.append(e.string())
       s
     end
 
   fun eq(that: _YAMLToken): Bool =>
     match that
     | let s : _YamlStreamStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
-                                          and (s.encoding == this.encoding)
+                                          and (s.encoding is this.encoding)
     else
       false
     end

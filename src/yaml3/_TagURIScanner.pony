@@ -43,12 +43,7 @@ class _TagURIScanner is _Scanner
         _uriEscapesScanner = s
         return s.apply(state)
       else
-        match state.read((uri = None) as String iso^)
-        | let u: String iso => uri = consume u
-        | let e: ScanError => return e
-        else
-          error
-        end
+        uri = state.read((uri = None) as String iso^)
       end
 
       if not state.available() then

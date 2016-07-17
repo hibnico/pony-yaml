@@ -24,10 +24,7 @@ class _AnchorScanner is _Scanner
       return ScanPaused(this~_scanAnchor())
     end
     while state.isAlpha() do
-      match state.read((_anchor = None) as String iso^)
-      | let s: String iso => _anchor = consume s
-      | let e: ScanError => return e
-      end
+      _anchor = state.read((_anchor = None) as String iso^)
       _length = _length + 1
       if not state.available() then
         return ScanPaused(this~_scanAnchor())

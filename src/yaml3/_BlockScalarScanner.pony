@@ -146,12 +146,7 @@ class _BlockScalarScanner is _Scanner
   /* Consume the current line. */
   fun ref _scanCurrentLine(state: _ScannerState): _ScanResult ? =>
     while not state.isBreakEOF() do
-      match state.read((_string = None) as String iso^)
-      | let e: ScanError => return e
-      | let s: String iso => _string = consume s
-      else
-        error
-      end
+      _string = state.read((_string = None) as String iso^)
       if not state.available() then
         return ScanPaused(this~_scanCurrentLine())
       end

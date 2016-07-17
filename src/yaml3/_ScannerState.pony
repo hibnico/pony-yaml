@@ -3,7 +3,7 @@ class _ScannerState
   let _tokenEmitter: TokenEmitter
   var _scanner: _Scanner = _RootScanner.create()
   let mark: YamlMark = YamlMark.create()
-  let _data: Array[U8] = Array[U8].create(1024)
+  let _data: Array[U32] = Array[U32].create(1024)
   var _pos: USize = 0
   var _eof_pos: USize = USize.max_value()
   var simpleKeyAllowed: Bool = true
@@ -13,11 +13,15 @@ class _ScannerState
   let simpleKeys: Array[_YamlSimpleKey] ref = Array[_YamlSimpleKey].create(5)
   var tokensParsed: USize = 0
   let _tokenBuffer: Array[_YAMLToken] ref = Array[_YAMLToken].create(5)
+  var encoding: Encoding = UTF8
 
   new create(tokenEmitter: TokenEmitter) =>
     _tokenEmitter = tokenEmitter
 
-  fun ref append(data: Array[U8] val) =>
+  fun ref setEncoding(encoding': Encoding) =>
+    encoding = encoding'
+
+  fun ref append(data: Array[U32] val) =>
     if data.size() == 0 then
       _eof_pos = _data.size()
     else
@@ -211,29 +215,13 @@ class _ScannerState
   fun available(nb: USize = 1): Bool =>
     ((_data.size() - _pos) >= nb) and ((_eof_pos - _pos) >= nb)
 
-  /*
-   * Determine the width of the character.
-   */
-  fun width(): USize ? =>
-    let char = _data(_pos)
-    if (char and 0x80) == 0x00 then 1
-    elseif (char and 0xE0) == 0xC0 then 2
-    elseif (char and 0xF0) == 0xE0 then 3
-    elseif (char and 0xF8) == 0xF0 then 4
-    else 0
-    end
-
-  fun at(i: USize = 0): U8 ? =>
+  fun at(i: USize = 0): U32 ? =>
     _data(_pos + i)
 
-  fun ref skip(nb: USize = 1) ? =>
+  fun ref skip(nb: USize = 1) =>
     mark.index = mark.index + nb
     mark.column = mark.column + nb
-    var n = nb
-    while n > 0 do
-      _pos = _pos + width()
-      n = n - 1
-    end
+    _pos = _pos + nb
 
   fun ref skipLine() ? =>
     if isCrlf() then
@@ -245,59 +233,39 @@ class _ScannerState
       mark.index = mark.index + 1
       mark.column = 0
       mark.line = mark.line + 1
-      _pos = _pos + width()
+      _pos = _pos + 1
     end
 
-  fun ref read(s: String iso): (ScanError | String iso^) ? =>
-    let char = _data(_pos)
-    if (char and 0x80) == 0x00 then
-      s.push(char)
-      _pos = _pos + 1
-    elseif (char and 0xE0) == 0xC0 then
-      s.push(char)
-      s.push(_data(_pos + 1))
-      _pos = _pos + 2
-    elseif (char and 0xF0) == 0xE0 then
-      s.push(char)
-      s.push(_data(_pos + 1))
-      s.push(_data(_pos + 2))
-      _pos = _pos + 2
-    elseif (char and 0xF8) == 0xF0 then
-      s.push(char)
-      s.push(_data(_pos + 1))
-      s.push(_data(_pos + 2))
-      s.push(_data(_pos + 3))
-      _pos = _pos + 3
-    else
-      return ScanError("Invalid caracter", mark.clone(), "")
-    end
+  fun ref read(s: String iso): String iso^ ? =>
+    s.push_utf32(_data(_pos))
+    _pos = _pos + 1
     mark.index = mark.index + 1
     mark.column = mark.column + 1
     consume s
 
   fun ref readLine(s: String iso): (ScanError | String iso^) ? =>
-    if check('\r') and check('\n', 1) then        /* CR LF -> LF */
+    let char = _data(_pos)
+    if (char == '\r') and check('\n', 1) then        /* CR LF -> LF */
       s.push('\n')
       _pos = _pos + 2
       mark.index = mark.index + 2
       mark.column = 0
       mark.line = mark.line + 1
-    elseif check('\r') or check('\n') then         /* CR|LF -> LF */
+    elseif (char == '\r') or (char == '\n') then         /* CR|LF -> LF */
       s.push('\n')
       _pos = _pos + 1
       mark.index = mark.index + 1
       mark.column = 0
       mark.line = mark.line + 1
-    elseif check('\xC2') and check('\x85', 1) then       /* NEL -> LF */
+    elseif char == 0x85 then       /* NEL -> LF */
       s.push('\n')
-      _pos = _pos + 2
+      _pos = _pos + 1
       mark.index = mark.index + 1
       mark.column = 0
       mark.line = mark.line + 1
-    elseif check('\xE2') and check('\x80', 1) and (check('\xA8', 2) or check('\xA9', 2)) then  /* LS|PS -> LS|PS */
-      s.push(_data(_pos = _pos + 1))
-      s.push(_data(_pos = _pos + 1))
-      s.push(_data(_pos = _pos + 1))
+    elseif (char == 0x2028) or (char == 0x2029) then  /* LS|PS -> LS|PS */
+      s.push_utf32(char)
+      _pos = _pos + 1
       mark.index = mark.index + 1
       mark.column = 0
       mark.line = mark.line + 1
@@ -310,7 +278,7 @@ class _ScannerState
   /*
    * Check the current octet in the buffer.
    */
-  fun check(char: U8, offset: USize = 0): Bool ? =>
+  fun check(char: U32, offset: USize = 0): Bool ? =>
     _data(_pos + offset) == char
 
   /*
@@ -337,7 +305,7 @@ class _ScannerState
    * Get the value of a digit.
    */
   fun asDigit(offset: USize = 0): U8 ? =>
-    _data(_pos + offset) - '0'
+    _data(_pos + offset).u8() - '0'
 
   /*
    * Check if the character at the specified position is a hex-digit.
@@ -352,7 +320,7 @@ class _ScannerState
    * Get the value of a hex-digit.
    */
   fun asHex(offset: USize = 0): U8 ? =>
-    let char = _data(_pos + offset)
+    let char = _data(_pos + offset).u8()
     match char
     | let c: U8 if (c >= 'A') and (c <= 'F') => (c - 'A') + 10
     | let c: U8 if (c >= 'a') and (c <= 'f') => (c - 'a') + 10
@@ -372,22 +340,15 @@ class _ScannerState
    */
   fun isPrintable(offset: USize = 0): Bool ? =>
     let char = _data(_pos + offset)
-    ((char == 0x0A)         /* . == #x0A */
-     or ((char >= 0x20)       /* #x20 <= . <= #x7E */
-         and (char <= 0x7E))
-     or ((char == 0xC2)       /* #0xA0 <= . <= #xD7FF */
-         and (_data(_pos + offset + 1) >= 0xA0))
-     or ((char > 0xC2)
-         and (char < 0xED))
-     or ((char == 0xED)
-         and (_data(_pos + offset + 1) < 0xA0))
-     or (char == 0xEE)
-     or ((char == 0xEF)      /* #xE000 <= . <= #xFFFD */
-         and not ((_data(_pos + offset + 1) == 0xBB)        /* and . != #xFEFF */
-                  and (_data(_pos + offset + 2) == 0xBF))
-         and not ((_data(_pos + offset + 1) == 0xBF)
-                  and ((_data(_pos + offset + 2) == 0xBE)
-                       or (_data(_pos + offset + 2) == 0xBF)))))
+    (   (char == 0x09)
+     or (char == 0x0A)
+     or (char == 0x0D)
+     or ((0x20 <= char) and (char <= 0x7E))
+     or (char == 0x85)
+     or ((0xA0 <= char) and (char >= 0xD7FF))
+     or ((0xE000 <= char) and (char >= 0xFFFD))
+     or ((0x10000 <= char) and (char >= 0x10FFFF))
+    )
 
   /*
    * Check if the character at the specified position is NUL.
@@ -399,9 +360,7 @@ class _ScannerState
    * Check if the character at the specified position is BOM.
    */
   fun isBom(offset: USize = 0): Bool ? =>
-    (_data(_pos + offset) == '\xEF')
-      and (_data(_pos + offset + 1) == '\xBB')
-      and (_data(_pos + offset + 2) == '\xBF')  /* BOM (#xFEFF) */
+    _data(_pos + offset) == 0xFEFF
 
   /*
    * Check if the character at the specified position is space.
@@ -425,16 +384,11 @@ class _ScannerState
    * Check if the character at the specified position is a line break.
    */
   fun isBreak(offset: USize = 0): Bool ? =>
-    (_data(_pos + offset) == '\r')                  /* CR (#xD)*/
-      or (_data(_pos + offset) == '\n')             /* LF (#xA) */
-      or ((_data(_pos + offset) == '\xC2')
-        and (_data(_pos + offset + 1) == '\x85'))   /* NEL (#x85) */
-      or ((_data(_pos + offset) == '\xE2')
-        and (_data(_pos + offset + 1) == '\x80')
-        and (_data(_pos + offset + 2) == '\xA8'))   /* LS (#x2028) */
-      or ((_data(_pos + offset) == '\xE2')
-        and (_data(_pos + offset + 1) == '\x80')
-        and (_data(_pos + offset + 2) == '\xA9'))   /* PS (#x2029) */
+    (_data(_pos + offset) == '\r')        /* CR */
+      or (_data(_pos + offset) == '\n')   /* LF */
+      or (_data(_pos + offset) == 0x85)   /* NEL */
+      or (_data(_pos + offset) == 0x2028) /* LS */
+      or (_data(_pos + offset) == 0x2029) /* PS */
 
   fun isCrlf(offset: USize = 0): Bool ? =>
     (_data(_pos + offset) == '\r') and (_data(_pos + offset + 1) == '\n')

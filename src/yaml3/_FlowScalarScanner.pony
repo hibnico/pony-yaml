@@ -77,12 +77,7 @@ class _FlowScalarScanner is _Scanner
         end
       else
         /* It is a non-escaped non-blank character. */
-        match state.read((_string = None) as String iso^)
-        | let e: ScanError => return e
-        | let s: String iso => _string = consume s
-        else
-          error
-        end
+        _string = state.read((_string = None) as String iso^)
       end
       if not state.available(2) then
         return ScanPaused(this~_scanNonBlank())
@@ -132,7 +127,7 @@ class _FlowScalarScanner is _Scanner
     state.skip(codeLength)
     this._scanNonBlank(state)
 
-  fun _checkEscapeChar(char: U8, s: String iso): (ScanError | (USize, String iso^)) =>
+  fun _checkEscapeChar(char: U32, s: String iso): (ScanError | (USize, String iso^)) =>
     var codeLength : USize = 0
     match char
     | '0' => s.push('\0')
@@ -189,12 +184,7 @@ class _FlowScalarScanner is _Scanner
       if state.isBlank() then
         /* Consume a space or a tab character. */
         if not (_scalarBlanks as _ScalarBlanks iso).leadingBlank then
-          match state.read(((_scalarBlanks as _ScalarBlanks iso).whitespaces = None) as String iso^)
-          | let e: ScanError => return e
-          | let s: String iso => (_scalarBlanks as _ScalarBlanks iso).whitespaces = consume s
-          else
-            error
-          end
+          (_scalarBlanks as _ScalarBlanks iso).whitespaces = state.read(((_scalarBlanks as _ScalarBlanks iso).whitespaces = None) as String iso^)
         else
           state.skip()
         end

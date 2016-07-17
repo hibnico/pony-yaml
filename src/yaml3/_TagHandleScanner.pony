@@ -33,12 +33,7 @@ class _TagHandleScanner is _Scanner
       return ScanPaused(this~_scanAlpha())
     end
     while state.isAlpha() do
-      match state.read((handle = None) as String iso^)
-      | let h: String iso => handle = consume h
-      | let e: ScanError => return e
-      else
-        error
-      end
+      handle = state.read((handle = None) as String iso^)
       if not state.available() then
         return ScanPaused(this~_scanAlpha())
       end

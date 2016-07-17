@@ -30,15 +30,12 @@ class iso _TestSimple is UnitTest
     h.long_test(1000)
     let expectedTokens: Array[_YAMLToken] val = recover val
       let tokens: Array[_YAMLToken] = Array[_YAMLToken].create()
-      tokens.push(_YamlStreamStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(0, 0, 0), "UTF-8"))
+      tokens.push(_YamlStreamStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(0, 0, 0), UTF8))
       tokens.push(_YamlDocumentStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(3, 0, 3)))
       tokens.push(_YamlStreamEndToken.create(YamlMark.newval(3, 0, 3), YamlMark.newval(0, 0, 0)))
       tokens
     end
     let collector = _TokenCheckerCollector.create(h, expectedTokens)
-    let state: _ScannerState = _ScannerState.create(collector)
-    state.append("---\n".array())
-    state.append(recover val Array[U8].create() end)
-    try
-      state.run()
-    end
+    let parser: Parser = Parser.create(collector)
+    parser.read("---\n".array())
+    parser.read(recover val Array[U8].create() end)

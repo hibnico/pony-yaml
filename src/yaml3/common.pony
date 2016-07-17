@@ -1,4 +1,8 @@
 
+interface tag CodePointsReader
+  be setEncoding(encoding: Encoding)
+  be read(codePoints: Array[U32] val)
+
 class Option[T]
   var _value : (None | T)
   new none() => _value = None
