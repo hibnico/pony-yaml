@@ -5,7 +5,6 @@ class _ScannerState
   let mark: YamlMark = YamlMark.create()
   let _data: Array[U32] = Array[U32].create(1024)
   var _pos: USize = 0
-  var _eof_pos: USize = USize.max_value()
   var simpleKeyAllowed: Bool = true
   var flowLevel: USize = 0
   var indent: USize = 0
@@ -22,16 +21,12 @@ class _ScannerState
     encoding = encoding'
 
   fun ref append(data: Array[U32] val) =>
-    if data.size() == 0 then
-      _eof_pos = _data.size()
-    else
-      // use the opportunity to reclaim some ununsed space
-      if _pos != 0 then
-        _data.copy_to(_data, _pos, 0, _data.size() - _pos)
-        _pos = 0
-      end
-      _data.append(data)
+    // use the opportunity to reclaim some ununsed space
+    if _pos != 0 then
+      _data.copy_to(_data, _pos, 0, _data.size() - _pos)
+      _pos = 0
     end
+    _data.append(data)
 
   fun ref run(): (ScanDone | ScanPaused | ScanError) ? =>
     match _scanner.apply(this)
@@ -213,7 +208,7 @@ class _ScannerState
     hasPossibleSimpleKeys
 
   fun available(nb: USize = 1): Bool =>
-    ((_data.size() - _pos) >= nb) and ((_eof_pos - _pos) >= nb)
+    (_data.size() - _pos) >= nb
 
   fun at(i: USize = 0): U32 ? =>
     _data(_pos + i)
@@ -353,8 +348,8 @@ class _ScannerState
   /*
    * Check if the character at the specified position is NUL.
    */
-  fun isEOF(offset: USize = 0): Bool =>
-    (_pos + offset) == _eof_pos
+  fun isEOF(offset: USize = 0): Bool ? =>
+    _data(_pos + offset) == 0
 
   /*
    * Check if the character at the specified position is BOM.

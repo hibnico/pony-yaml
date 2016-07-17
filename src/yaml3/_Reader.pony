@@ -26,7 +26,6 @@ primitive _IncompleteEncoding
 
 actor _Reader
   var _pos: USize = 0
-  var _eof_pos: USize = USize.max_value()
   var _encodingDetermined: Bool = false
   var _data: Array[U8] = Array[U8].create(1024)
   var _encoding: Encoding = UTF8
@@ -50,7 +49,7 @@ actor _Reader
 
   fun ref _append(data: Array[U8] val) =>
     if data.size() == 0 then
-      _eof_pos = _data.size()
+      _data.push(0)
     else
       // use the opportunity to reclaim some ununsed space
       if _pos != 0 then
@@ -112,6 +111,11 @@ actor _Reader
     let s: USize = _codepointBufferSize
     let codePoints: Array[U32] iso = recover Array[U32].create(s) end
     while (_pos < _data.size()) and (codePoints.size() < _codepointBufferSize) do
+      if _data(_pos) == 0 then
+        codePoints.push(0)
+        _pos = _pos + 1
+        break
+      end
       let value: U32 = match _decode()
                       | _IncompleteEncoding => break
                       | let e: EncodingError => return e
@@ -122,9 +126,6 @@ actor _Reader
       codePoints.push(value)
     end
     _codePointsReader.read(consume codePoints)
-    if _pos == _eof_pos then
-      _codePointsReader.read(recover val Array[U32].create(0) end)
-    end
     None
 
   fun ref _decode(): (U32 | EncodingError | _IncompleteEncoding) ? =>
@@ -198,7 +199,7 @@ actor _Reader
     end
     /* Check if the raw buffer contains an incomplete character. */
     if width > (_data.size() - _pos) then
-      if _eof_pos == _data.size() then
+      if _data(_data.size() - 1) == 0 then
         return EncodingError.create("incomplete UTF-8 octet sequence", _pos)
       end
       return _IncompleteEncoding
@@ -266,7 +267,7 @@ actor _Reader
   fun ref _decodeUTF16(low: USize, high: USize): (U32 | EncodingError | _IncompleteEncoding) ? =>
     /* Check for incomplete UTF-16 character. */
     if (_data.size() - _pos) < 2 then
-      if _eof_pos == _data.size() then
+      if _data(_data.size() - 1) == 0 then
         return EncodingError.create("incomplete UTF-16 character", _pos)
       end
       return _IncompleteEncoding
@@ -281,7 +282,7 @@ actor _Reader
     if (value and 0xFC00) == 0xD800 then
       /* Check for incomplete surrogate pair. */
       if (_data.size() - _pos) < 4 then
-        if _eof_pos == _data.size() then
+        if _data(_data.size() - 1) == 0 then
           return EncodingError.create("incomplete UTF-16 surrogate pair", _pos)
         end
         return _IncompleteEncoding
@@ -303,7 +304,7 @@ actor _Reader
   fun ref _decodeUTF32(low: USize, low2: USize, high: USize, high2: USize): (U32 | EncodingError | _IncompleteEncoding) ? =>
     /* Check for incomplete UTF-32 character. */
     if (_data.size() - _pos) < 4 then
-      if _eof_pos == _data.size() then
+      if _data(_data.size() - 1) == 0 then
         return EncodingError.create("incomplete UTF-32 character", _pos)
       end
       return _IncompleteEncoding
