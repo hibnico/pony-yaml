@@ -59,6 +59,7 @@ class _FlowScalarScanner is _Scanner
         break
       /* Check for an escaped line break. */
       elseif (not _single and state.check('\\') and state.isBreak(1)) then
+        state.skip()
         return this._scanEscapedEndLine(state)
       /* Check for an escape sequence. */
       elseif (not _single and state.check('\\')) then
@@ -86,11 +87,26 @@ class _FlowScalarScanner is _Scanner
     this._scanEndNonBlank(state)
 
   fun ref _scanEscapedEndLine(state: _ScannerState): _ScanResult ? =>
-    if not state.available(3) then
-      return ScanPaused(this~_scanEscapedEndLine())
+    if state.isBreakCR() then
+      this._scanEscapedEndLineCR(state)
+    elseif (state.isBreakLF() or state.isBreakNotCRLF()) then
+      state.skipLine(1)
     end
-    state.skip()
-    state.skipLine()
+    this._scanEscapedEndLine_end(state)
+
+  fun ref _scanEscapedEndLineCR(state: _ScannerState): _ScanResult ? =>
+    if not state.available(2) then
+      return ScanPaused(this~_scanEscapedEndLineCR())
+    end
+    if state.isBreakLF(1) then
+      state.skipLine(2)
+    else
+      // already checked that there is a line break, cf the _scanNonBlank function
+      state.skipLine(1)
+    end
+    this._scanEscapedEndLine_end(state)
+
+  fun ref _scanEscapedEndLine_end(state: _ScannerState): _ScanResult ? =>
     (_scalarBlanks as _ScalarBlanks iso).leadingBlank = true
     this._scanEndNonBlank(state)
 

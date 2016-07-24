@@ -18,7 +18,6 @@ actor _TokenCheckerCollector is TokenEmitter
     try
       _h.assert_eq[_YAMLToken](token, _expectedTokens(pos))
     end
-    Debug.out(token)
     pos = pos + 1
     if pos == _expectedTokens.size() then
       _h.complete(true)
@@ -27,12 +26,12 @@ actor _TokenCheckerCollector is TokenEmitter
 class iso _TestSimple is UnitTest
   fun name(): String => "simple"
   fun apply(h: TestHelper) =>
-    h.long_test(1000)
+    h.long_test(1000000)
     let expectedTokens: Array[_YAMLToken] val = recover val
       let tokens: Array[_YAMLToken] = Array[_YAMLToken].create()
       tokens.push(_YamlStreamStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(0, 0, 0), UTF8))
       tokens.push(_YamlDocumentStartToken.create(YamlMark.newval(0, 0, 0), YamlMark.newval(3, 0, 3)))
-      tokens.push(_YamlStreamEndToken.create(YamlMark.newval(3, 0, 3), YamlMark.newval(0, 0, 0)))
+      tokens.push(_YamlStreamEndToken.create(YamlMark.newval(4, 1, 0), YamlMark.newval(4, 1, 0)))
       tokens
     end
     let collector = _TokenCheckerCollector.create(h, expectedTokens)

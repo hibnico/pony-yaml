@@ -9,10 +9,21 @@ class _EOLScanner
 
   fun ref _eatLineBreak(nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
     /* Eat a line break. */
-    if state.isBreak() then
-      if not state.available(2) then
-        return ScanPaused(this~_eatLineBreak(nextScanner))
-      end
-      state.skipLine()
+    if state.isBreakCR() then
+      this._eatLineBreakCR(nextScanner, state)
+    elseif (state.isBreakLF() or state.isBreakNotCRLF()) then
+      state.skipLine(1)
+    end
+    nextScanner.apply(state)
+
+  fun ref _eatLineBreakCR(nextScanner: _Scanner, state: _ScannerState): _ScanResult ? =>
+    if not state.available(2) then
+      return ScanPaused(this~_eatLineBreakCR(nextScanner))
+    end
+    if state.isBreakLF(1) then
+      state.skipLine(2)
+    else
+      // already checked that there is a line break, cf the scan function
+      state.skipLine(1)
     end
     nextScanner.apply(state)

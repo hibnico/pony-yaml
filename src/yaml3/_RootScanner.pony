@@ -75,18 +75,27 @@ class _RootScanner
     this._scanToNextToken_checkLineBreak(state)
 
   fun ref _scanToNextToken_checkLineBreak(state: _ScannerState): _ScanResult ? =>
-    /* If it is a line break, eat it. */
-    if state.isBreak() then
-      this._scanToNextToken_skipLineBreak(state)
+    if state.isBreakCR() then
+      this._scanToNextToken_skipLineBreakCR(state)
+    elseif state.isBreakLF() or state.isBreakNotCRLF() then
+      state.skipLine(1)
+      this._scanToNextToken_skipLineBreak_end(state)
     else
       this._scanToNextToken_staleKeys(state)
     end
 
-  fun ref _scanToNextToken_skipLineBreak(state: _ScannerState): _ScanResult ? =>
+  fun ref _scanToNextToken_skipLineBreakCR(state: _ScannerState): _ScanResult ? =>
     if not state.available(2) then
-      return ScanPaused(this~_scanToNextToken_skipLineBreak())
+      return ScanPaused(this~_scanToNextToken_skipLineBreakCR())
     end
-    state.skipLine()
+    if state.isBreakLF(1) then
+      state.skipLine(2)
+    else
+      state.skipLine(1)
+    end
+    this._scanToNextToken_skipLineBreak_end(state)
+
+  fun ref _scanToNextToken_skipLineBreak_end(state: _ScannerState): _ScanResult ? =>
     /* In the block context, a new line may start a simple key. */
     if state.flowLevel == 0 then
       state.simpleKeyAllowed = true
@@ -100,6 +109,16 @@ class _RootScanner
     end
     /* Check the indentation level against the current column. */
     state.unrollIndent(state.mark.column)
+    this._checkEOF(state)
+
+  fun ref _checkEOF(state: _ScannerState): _ScanResult ? =>
+    if not state.available() then
+      return ScanPaused(this~_checkEOF())
+    end
+    /* Is it the end of the stream? */
+    if state.isEOF() then
+      return this._scanStreamEnd(state)
+    end
     this._scanToken(state)
 
   fun ref _scanToken(state: _ScannerState): _ScanResult ? =>
@@ -109,11 +128,6 @@ class _RootScanner
     */
     if not state.available(4) then
       return ScanPaused(this~_scanToken())
-    end
-
-    /* Is it the end of the stream? */
-    if state.isEOF() then
-      return this._scanStreamEnd(state)
     end
 
     /* Is it a directive? */

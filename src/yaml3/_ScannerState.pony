@@ -23,7 +23,9 @@ class _ScannerState
   fun ref append(data: Array[U32] val) =>
     // use the opportunity to reclaim some ununsed space
     if _pos != 0 then
-      _data.copy_to(_data, _pos, 0, _data.size() - _pos)
+      let len = _data.size() - _pos
+      _data.copy_to(_data, _pos, 0, len)
+      _data.truncate(len)
       _pos = 0
     end
     _data.append(data)
@@ -218,18 +220,11 @@ class _ScannerState
     mark.column = mark.column + nb
     _pos = _pos + nb
 
-  fun ref skipLine() ? =>
-    if isCrlf() then
-      mark.index = mark.index + 2
-      mark.column = 0
-      mark.line = mark.line + 1
-      _pos = _pos + 2
-    elseif isBreak() then
-      mark.index = mark.index + 1
-      mark.column = 0
-      mark.line = mark.line + 1
-      _pos = _pos + 1
-    end
+  fun ref skipLine(nbChar: USize) =>
+    mark.index = mark.index + nbChar
+    mark.column = 0
+    mark.line = mark.line + 1
+    _pos = _pos + nbChar
 
   fun ref read(s: String iso): String iso^ ? =>
     s.push_utf32(_data(_pos))
@@ -379,9 +374,25 @@ class _ScannerState
    * Check if the character at the specified position is a line break.
    */
   fun isBreak(offset: USize = 0): Bool ? =>
-    (_data(_pos + offset) == '\r')        /* CR */
-      or (_data(_pos + offset) == '\n')   /* LF */
-      or (_data(_pos + offset) == 0x85)   /* NEL */
+    isBreakCR(offset) or isBreakLF(offset) or isBreakNotCRLF(offset)
+
+  /*
+   * Check if the character at the specified position is a CR line break.
+   */
+  fun isBreakCR(offset: USize = 0): Bool ? =>
+    _data(_pos + offset) == '\r'
+
+  /*
+   * Check if the character at the specified position is a LF line break.
+   */
+  fun isBreakLF(offset: USize = 0): Bool ? =>
+    _data(_pos + offset) == '\n'
+
+  /*
+   * Check if the character at the specified position is a line break.
+   */
+  fun isBreakNotCRLF(offset: USize = 0): Bool ? =>
+    (_data(_pos + offset) == 0x85)   /* NEL */
       or (_data(_pos + offset) == 0x2028) /* LS */
       or (_data(_pos + offset) == 0x2029) /* PS */
 

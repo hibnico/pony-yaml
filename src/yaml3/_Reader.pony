@@ -48,14 +48,16 @@ actor _Reader
     end
 
   fun ref _append(data: Array[U8] val) =>
+    // use the opportunity to reclaim some ununsed space
+    if _pos != 0 then
+      let len = _data.size() - _pos
+      _data.copy_to(_data, _pos, 0, len)
+      _data.truncate(len)
+      _pos = 0
+    end
     if data.size() == 0 then
       _data.push(0)
     else
-      // use the opportunity to reclaim some ununsed space
-      if _pos != 0 then
-        _data.copy_to(_data, _pos, 0, _data.size() - _pos)
-        _pos = 0
-      end
       _data.append(data)
     end
 
