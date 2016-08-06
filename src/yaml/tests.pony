@@ -7,7 +7,7 @@ actor Main is TestList
   fun tag tests(test: PonyTest) =>
     test(_TestSimple)
 
-actor _TokenCheckerCollector is TokenEmitter
+actor _TokenCheckerCollector is YamlTokenEmitter
   let _expectedTokens: Array[YamlToken] val
   let _h: TestHelper
   var pos: USize = 0
@@ -35,6 +35,6 @@ class iso _TestSimple is UnitTest
       tokens
     end
     let collector = _TokenCheckerCollector.create(h, expectedTokens)
-    let parser: Parser = Parser.create(collector)
+    let parser: YamlParser = YamlParser.create(collector)
     parser.read("---\n".array())
     parser.read(recover val Array[U8].create() end)

@@ -1,7 +1,7 @@
 actor _ScannerActor
   let _state: _ScannerState
 
-  new create(tokenEmitter: TokenEmitter) =>
+  new create(tokenEmitter: YamlTokenEmitter) =>
     _state = _ScannerState.create(tokenEmitter)
 
   be setEncoding(encoding: Encoding) =>

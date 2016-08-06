@@ -1,6 +1,6 @@
 
 class _ScannerState
-  let _tokenEmitter: TokenEmitter
+  let _tokenEmitter: YamlTokenEmitter
   var _scanner: _Scanner = _RootScanner.create()
   let mark: YamlMark = YamlMark.create()
   let _data: Array[U32] = Array[U32].create(1024)
@@ -14,7 +14,7 @@ class _ScannerState
   let _tokenBuffer: Array[YamlToken] ref = Array[YamlToken].create(5)
   var encoding: Encoding = UTF8
 
-  new create(tokenEmitter: TokenEmitter) =>
+  new create(tokenEmitter: YamlTokenEmitter) =>
     _tokenEmitter = tokenEmitter
 
   fun ref setEncoding(encoding': Encoding) =>

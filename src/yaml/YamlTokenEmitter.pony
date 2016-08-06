@@ -1,8 +1,8 @@
 
-interface tag TokenEmitter
+interface tag YamlTokenEmitter
   be emit(token: YamlToken)
 
-actor TokenCollector is TokenEmitter
+actor YamlTokenCollector is YamlTokenEmitter
   let tokens: Array[YamlToken] = Array[YamlToken].create()
   be emit(token: YamlToken) =>
     tokens.push(token)
