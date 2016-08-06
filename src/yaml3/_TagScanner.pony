@@ -82,7 +82,7 @@ class _TagScanner is _Scanner
       return ScanError("while scanning a tag", _startMark, "did not find expected whitespace or line break")
     end
     let endMark = state.mark.clone()
-    match state.emitToken(_YamlTagToken(_startMark, endMark, _handle, _suffix))
+    match state.emitToken(YamlTagToken(_startMark, endMark, _handle, _suffix))
     | let e: ScanError => return e
     end
     _nextScanner.apply(state)

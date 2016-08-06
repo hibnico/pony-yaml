@@ -151,7 +151,7 @@ class _PlainScalarScanner is _Scanner
     this._scanContent(state)
 
   fun ref _scanEnd(state: _ScannerState): _ScanResult ? =>
-    match state.emitToken(_YamlScalarToken(_startMark, _endMark, (_string = None) as String iso^, _YamlPlainScalarStyle))
+    match state.emitToken(YamlScalarToken(_startMark, _endMark, (_string = None) as String iso^, YamlPlainScalarStyle))
     | let e: ScanError => return e
     end
     /* Note that we change the 'simple_key_allowed' flag. */

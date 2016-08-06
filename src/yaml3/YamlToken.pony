@@ -1,9 +1,9 @@
 /** Token types. */
 
-trait val _YAMLToken is (Equatable[_YAMLToken] & Stringable)
+trait val YamlToken is (Equatable[YamlToken] & Stringable)
 
 /** An empty token. */
-class val _YamlNoToken is _YAMLToken
+class val YamlNoToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -26,16 +26,16 @@ class val _YamlNoToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlNoToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlNoToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A STREAM-START token. */
-class val _YamlStreamStartToken is _YAMLToken
+class val YamlStreamStartToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -63,16 +63,16 @@ class val _YamlStreamStartToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlStreamStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlStreamStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                           and (s.encoding is this.encoding)
     else
       false
     end
 
 /** A STREAM-END token. */
-class val _YamlStreamEndToken is _YAMLToken
+class val YamlStreamEndToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -95,16 +95,16 @@ class val _YamlStreamEndToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlStreamEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlStreamEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A VERSION-DIRECTIVE token. */
-class val _YamlVersionDirectiveToken is _YAMLToken
+class val YamlVersionDirectiveToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -138,9 +138,9 @@ class val _YamlVersionDirectiveToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlVersionDirectiveToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlVersionDirectiveToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                               and (s.major == this.major) and (s.minor == this.minor)
     else
       false
@@ -148,7 +148,7 @@ class val _YamlVersionDirectiveToken is _YAMLToken
 
 
 /** A TAG-DIRECTIVE token. */
-class val _YamlTagDirectiveToken is _YAMLToken
+class val YamlTagDirectiveToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -182,9 +182,9 @@ class val _YamlTagDirectiveToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlTagDirectiveToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlTagDirectiveToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                           and (s.prefix == this.prefix) and (s.handle == this.handle)
     else
       false
@@ -192,7 +192,7 @@ class val _YamlTagDirectiveToken is _YAMLToken
 
 
 /** A DOCUMENT-START token. */
-class val _YamlDocumentStartToken is _YAMLToken
+class val YamlDocumentStartToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -215,16 +215,16 @@ class val _YamlDocumentStartToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlDocumentStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlDocumentStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A DOCUMENT-END token. */
-class val _YamlDocumentEndToken is _YAMLToken
+class val YamlDocumentEndToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -247,16 +247,16 @@ class val _YamlDocumentEndToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlDocumentEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlDocumentEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A BLOCK-SEQUENCE-START token. */
-class val _YamlBlockSequenceStartToken is _YAMLToken
+class val YamlBlockSequenceStartToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -279,16 +279,16 @@ class val _YamlBlockSequenceStartToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlBlockSequenceStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlBlockSequenceStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A BLOCK-SEQUENCE-END token. */
-class val _YamlBlockMappingStartToken is _YAMLToken
+class val YamlBlockMappingStartToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -311,16 +311,16 @@ class val _YamlBlockMappingStartToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlBlockMappingStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlBlockMappingStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A BLOCK-END token. */
-class val _YamlBlockEndToken is _YAMLToken
+class val YamlBlockEndToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -343,16 +343,16 @@ class val _YamlBlockEndToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlBlockEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlBlockEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A FLOW-SEQUENCE-START token. */
-class val _YamlFlowSequenceStartToken is _YAMLToken
+class val YamlFlowSequenceStartToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -375,16 +375,16 @@ class val _YamlFlowSequenceStartToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlFlowSequenceStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlFlowSequenceStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A FLOW-SEQUENCE-END token. */
-class val _YamlFlowSequenceEndToken is _YAMLToken
+class val YamlFlowSequenceEndToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -407,16 +407,16 @@ class val _YamlFlowSequenceEndToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlFlowSequenceEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlFlowSequenceEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A FLOW-MAPPING-START token. */
-class val _YamlFlowMappingStartToken is _YAMLToken
+class val YamlFlowMappingStartToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -439,16 +439,16 @@ class val _YamlFlowMappingStartToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlFlowMappingStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlFlowMappingStartToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A FLOW-MAPPING-END token. */
-class val _YamlFlowMappingEndToken is _YAMLToken
+class val YamlFlowMappingEndToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -471,16 +471,16 @@ class val _YamlFlowMappingEndToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlFlowMappingEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlFlowMappingEndToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A BLOCK-ENTRY token. */
-class val _YamlBlockEntryToken is _YAMLToken
+class val YamlBlockEntryToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -503,16 +503,16 @@ class val _YamlBlockEntryToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlBlockEntryToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlBlockEntryToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A FLOW-ENTRY token. */
-class val _YamlFlowEntryToken is _YAMLToken
+class val YamlFlowEntryToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -535,16 +535,16 @@ class val _YamlFlowEntryToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlFlowEntryToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlFlowEntryToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A KEY token. */
-class val _YamlKeyToken is _YAMLToken
+class val YamlKeyToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -567,16 +567,16 @@ class val _YamlKeyToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlKeyToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlKeyToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** A VALUE token. */
-class val _YamlValueToken is _YAMLToken
+class val YamlValueToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -599,16 +599,16 @@ class val _YamlValueToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlValueToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlValueToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
     else
       false
     end
 
 
 /** An ALIAS token. */
-class val _YamlAliasToken is _YAMLToken
+class val YamlAliasToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -636,9 +636,9 @@ class val _YamlAliasToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlAliasToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlAliasToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                     and (s.value == this.value)
     else
       false
@@ -646,7 +646,7 @@ class val _YamlAliasToken is _YAMLToken
 
 
 /** An ANCHOR token. */
-class val _YamlAnchorToken is _YAMLToken
+class val YamlAnchorToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -674,16 +674,16 @@ class val _YamlAnchorToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlAnchorToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlAnchorToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                     and (s.value == this.value)
     else
       false
     end
 
 /** A TAG token. */
-class val _YamlTagToken is _YAMLToken
+class val YamlTagToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -718,9 +718,9 @@ class val _YamlTagToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlTagToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlTagToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                           and (s.suffix == this.suffix) and (s.handle == this.handle)
     else
       false
@@ -728,13 +728,13 @@ class val _YamlTagToken is _YAMLToken
 
 
 /** A SCALAR token. */
-primitive _YamlFoldedScalarStyle
-primitive _YamlLiteralScalarStyle
-primitive _YamlDoubleQuotedScalarStyle
-primitive _YamlSingleQuotedScalarStyle
-primitive _YamlPlainScalarStyle
-type _YamlScalarStyle is (_YamlFoldedScalarStyle | _YamlLiteralScalarStyle | _YamlDoubleQuotedScalarStyle | _YamlSingleQuotedScalarStyle | _YamlPlainScalarStyle)
-class val _YamlScalarToken is _YAMLToken
+primitive YamlFoldedScalarStyle
+primitive YamlLiteralScalarStyle
+primitive YamlDoubleQuotedScalarStyle
+primitive YamlSingleQuotedScalarStyle
+primitive YamlPlainScalarStyle
+type YamlScalarStyle is (YamlFoldedScalarStyle | YamlLiteralScalarStyle | YamlDoubleQuotedScalarStyle | YamlSingleQuotedScalarStyle | YamlPlainScalarStyle)
+class val YamlScalarToken is YamlToken
   /** The beginning of the token. */
   let startMark: YamlMark val
   /** The end of the token. */
@@ -742,9 +742,9 @@ class val _YamlScalarToken is _YAMLToken
   /** The scalar value. */
   let value: String
   /** The scalar style. */
-  let style: _YamlScalarStyle
+  let style: YamlScalarStyle
 
-  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String, style': _YamlScalarStyle) =>
+  new val create(startMark': YamlMark val, endMark': YamlMark val, value': String, style': YamlScalarStyle) =>
     startMark = startMark'
     endMark = endMark'
     value = value'
@@ -763,9 +763,9 @@ class val _YamlScalarToken is _YAMLToken
       s
     end
 
-  fun eq(that: _YAMLToken): Bool =>
+  fun eq(that: YamlToken): Bool =>
     match that
-    | let s : _YamlScalarToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
+    | let s : YamlScalarToken => (s.startMark == this.startMark) and (s.endMark == this.endMark)
                                     and (s.style is this.style) and (s.value == this.value)
     else
       false

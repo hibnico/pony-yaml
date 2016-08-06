@@ -45,14 +45,14 @@ class _DirectiveScanner is _Scanner
 
   fun ref _scanVersion(state: _ScannerState): _ScanResult ? =>
     let versionScanner = _versionScanner as _VersionDirectiveValueScanner
-    match state.emitToken(_YamlVersionDirectiveToken(_startMark, state.mark.clone(), versionScanner.major, versionScanner.minor))
+    match state.emitToken(YamlVersionDirectiveToken(_startMark, state.mark.clone(), versionScanner.major, versionScanner.minor))
     | let e: ScanError => return e
     end
     _LineTrailScanner.scan(_startMark, "while scanning a directive", _nextScanner, state)
 
   fun ref _scanTagValue(state: _ScannerState): _ScanResult ? =>
     let tagScanner = _tagScanner as _TagDirectiveValueScanner
-    match state.emitToken(_YamlTagDirectiveToken(_startMark, state.mark.clone(), (tagScanner.handle as String).clone(), (tagScanner.prefix as String).clone()))
+    match state.emitToken(YamlTagDirectiveToken(_startMark, state.mark.clone(), (tagScanner.handle as String).clone(), (tagScanner.prefix as String).clone()))
     | let e: ScanError => return e
     end
     _LineTrailScanner.scan(_startMark, "while scanning a directive", _nextScanner, state)

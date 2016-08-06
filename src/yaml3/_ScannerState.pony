@@ -11,7 +11,7 @@ class _ScannerState
   let indents: Array[USize] = Array[USize].create(5)
   let simpleKeys: Array[_YamlSimpleKey] ref = Array[_YamlSimpleKey].create(5)
   var tokensParsed: USize = 0
-  let _tokenBuffer: Array[_YAMLToken] ref = Array[_YAMLToken].create(5)
+  let _tokenBuffer: Array[YamlToken] ref = Array[YamlToken].create(5)
   var encoding: Encoding = UTF8
 
   new create(tokenEmitter: TokenEmitter) =>
@@ -39,7 +39,7 @@ class _ScannerState
       error
     end
 
-  fun ref emitToken(token: _YAMLToken, offset: USize = 0): (ScanError | None) ? =>
+  fun ref emitToken(token: YamlToken, offset: USize = 0): (ScanError | None) ? =>
     let hasPossibleSimpleKeys: Bool = match removeStaleSimpleKeys()
     | let e: ScanError => return e
     | let b: Bool => b
@@ -85,7 +85,7 @@ class _ScannerState
    * append or insert the specified token into the token queue.
    *
    */
-  fun ref rollIndent(column: USize, tokenConstructor: {(YamlMark val, YamlMark val) : _YAMLToken} val,
+  fun ref rollIndent(column: USize, tokenConstructor: {(YamlMark val, YamlMark val) : YamlToken} val,
                   m: YamlMark val, number: (USize | None) = None) ? =>
     /* In the flow context, do nothing. */
     if flowLevel > 0 then
@@ -131,7 +131,7 @@ class _ScannerState
     while indent > limit do
       /* Create a token and append it to the queue. */
       let m = mark.clone()
-      emitToken(_YamlBlockEndToken(m, m))
+      emitToken(YamlBlockEndToken(m, m))
       /* Pop the indentation level. */
       indent = indents.pop()
     end
